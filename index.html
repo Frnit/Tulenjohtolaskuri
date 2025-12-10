@@ -4,92 +4,194 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TJ-Laskuri Pro</title>
+    
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#121212">
+    <meta name="theme-color" content="#1e1e1e">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="icon.png"> 
-    
+
     <style>
-        /* Tyylit pidetään samana kuin V7, pieniä mobiilioptimointeja */
-        :root { --bg: #121212; --panel: #1e1e1e; --text: #e0e0e0; --accent: #2980b9; --success: #27ae60; --danger: #c0392b; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; display: flex; justify-content: center; }
-        .container { background: var(--panel); padding: 15px; border-radius: 8px; width: 100%; max-width: 500px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        h2 { text-align: center; margin: 5px 0 15px 0; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 1px; color: #888; }
+        :root {
+            --bg: #121212;
+            --panel: #1e1e1e;
+            --input-bg: #2d2d2d;
+            --text-main: #e0e0e0;
+            --text-muted: #888;
+            --border: #333;
+            --accent: #2980b9;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --danger: #c0392b;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 10px;
+            display: flex; justify-content: center;
+        }
+        .container {
+            background: var(--panel);
+            padding: 15px;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+            padding-bottom: 30px; /* Tilaa scrollaukselle */
+        }
+        h2 {
+            text-align: center; margin: 5px 0 15px 0; font-size: 1.1rem;
+            text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);
+        }
+
+        /* Input Styles */
+        label { display: block; margin-top: 8px; margin-bottom: 2px; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
+        input, select {
+            width: 100%; padding: 10px; background: var(--input-bg);
+            border: 1px solid var(--border); color: #fff;
+            border-radius: 4px; box-sizing: border-box; font-size: 16px; /* 16px estää zoomauksen iPhonessa */
+        }
+        input:focus, select:focus { border-color: var(--accent); outline: none; }
         
-        /* Inputit mobiiliystävällisiksi */
-        label { display: block; margin-top: 10px; font-size: 0.75rem; color: #888; text-transform: uppercase; }
-        input, select { width: 100%; padding: 10px; background: #2d2d2d; border: 1px solid #333; color: #fff; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
-        .row { display: flex; gap: 8px; }
+        /* Layout */
+        .row { display: flex; gap: 8px; align-items: flex-end; }
         .col { flex: 1; }
+        .coord-group { display: flex; gap: 4px; }
+        .coord-group input { text-align: center; padding: 10px 2px; } /* Tiivistetty DMS */
+
+        /* Buttons */
+        .btn-group { display: flex; gap: 5px; margin-bottom: 15px; background: #252525; padding: 5px; border-radius: 6px; }
+        .btn { padding: 10px; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; font-size: 0.8rem;}
+        .btn-save { background: var(--success); flex: 1; } 
+        .btn-del { background: var(--danger); width: 40px; }
         
-        /* Tulokset */
-        .result-box { background: #252d3a; padding: 15px; border-radius: 6px; margin-top: 20px; border: 1px solid #3a4b61; }
-        .res-row { display: flex; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px solid #3a4b61; padding-bottom: 5px; }
-        .res-val { font-weight: bold; font-family: monospace; font-size: 1.1rem; }
+        /* Result Box */
+        .result-box {
+            background: #252d3a; border-radius: 6px; padding: 15px;
+            margin-top: 20px; border: 1px solid #3a4b61;
+        }
+        .res-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; border-bottom: 1px solid #3a4b61; padding-bottom: 6px; }
+        .res-label { font-size: 0.8rem; color: #a0a0a0; }
+        .res-val { font-weight: bold; font-family: monospace; font-size: 1.1rem; color: #fff; }
         .res-highlight { color: var(--success); font-size: 1.4rem; }
-
-        /* Profiilinapit */
-        .btn-group { display: flex; gap: 5px; margin-bottom: 15px; }
-        .btn { padding: 8px; border: none; border-radius: 4px; color: white; font-weight: bold; flex: 1; cursor: pointer; }
-        .btn-save { background: var(--success); } .btn-del { background: var(--danger); }
-
+        
         /* Johnson Meter */
-        .meter { display: flex; height: 6px; gap: 2px; margin-top: 5px; }
-        .step { flex: 1; background: #333; }
-        .active.l1 { background: var(--danger); } .active.l2 { background: var(--warning); } .active.l3 { background: var(--success); }
-        .j-text { text-align: center; font-size: 0.8rem; margin-top: 4px; font-weight: bold; color: #666; }
+        .meter { display: flex; height: 6px; gap: 2px; margin-top: 8px; }
+        .step { flex: 1; background: #333; border-radius: 2px; }
+        .active.l1 { background: var(--danger); } 
+        .active.l2 { background: var(--warning); } 
+        .active.l3 { background: var(--success); }
+        .j-text { text-align: center; font-size: 0.75rem; margin-top: 4px; font-weight: bold; color: #666; }
+
+        /* Modal */
+        .info-btn { position: absolute; top: 15px; right: 15px; background: #333; color: #fff; border:none; width:25px; height:25px; border-radius:50%; font-weight:bold; }
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); }
+        .modal-content { background: var(--panel); margin: 15% auto; padding: 20px; width: 85%; border-radius: 8px; border: 1px solid #444; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Tulenjohtolaskuri Pro</h2>
+    <button class="info-btn" onclick="document.getElementById('infoModal').style.display='block'">i</button>
+    <h2>TJ-Laskuri Pro</h2>
 
     <div class="btn-group">
-        <select id="profileSelector" onchange="loadProfile()" style="flex: 2;"><option value="">-- Profiili --</option></select>
-        <button class="btn btn-save" onclick="saveProfile()">TALLENNA</button>
+        <select id="profileSelector" onchange="loadProfile()" style="flex: 3; background: transparent; border: none;">
+            <option value="">-- Valitse Profiili --</option>
+        </select>
+        <button class="btn btn-save" onclick="saveProfile()">TAL</button>
         <button class="btn btn-del" onclick="deleteProfile()">X</button>
     </div>
 
-    <div style="border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 10px;">
+    <div style="margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 15px;">
         <label>Oma Sijainti (WGS84)</label>
-        <div class="row">
-            <input type="number" id="lat" placeholder="Lat (esim 60.1234)" step="0.0001">
-            <input type="number" id="lon" placeholder="Lon (esim 24.5678)" step="0.0001">
+        <div class="row" style="margin-bottom: 5px;">
+            <div class="coord-group col">
+                <input type="number" id="latD" placeholder="Lat °" oninput="calc()">
+                <input type="number" id="latM" placeholder="'" oninput="calc()">
+                <input type="number" id="latS" placeholder='"' oninput="calc()">
+            </div>
         </div>
         <div class="row">
-            <div class="col"><label>Suunta</label><input type="number" id="azimuth" placeholder="Suunta" oninput="calc()"></div>
-            <div class="col"><label>Yksikkö</label><select id="azUnit" onchange="calc()"><option value="mil">Mil</option><option value="deg">Deg</option></select></div>
+            <div class="coord-group col">
+                <input type="number" id="lonD" placeholder="Lon °" oninput="calc()">
+                <input type="number" id="lonM" placeholder="'" oninput="calc()">
+                <input type="number" id="lonS" placeholder='"' oninput="calc()">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col" style="flex: 2;">
+                <label>Tähystyssuunta</label>
+                <input type="number" id="azimuth" placeholder="Suunta" oninput="calc()">
+            </div>
+            <div class="col" style="flex: 1;">
+                <label>Yksikkö</label>
+                <select id="azUnit" onchange="calc()">
+                    <option value="mil">Mil</option>
+                    <option value="deg">Deg</option>
+                    <option value="piiru">PV</option>
+                </select>
+            </div>
         </div>
     </div>
 
     <div class="row">
-        <div class="col"><label>FOV</label><input type="number" id="fov" placeholder="FOV" oninput="calc()"></div>
-        <div class="col"><label>Yksikkö</label><select id="fovUnit" onchange="calc()"><option value="deg">Deg</option><option value="mil">Mil</option></select></div>
-        <div class="col"><label>Kuva px</label><input type="number" id="res" value="1920" oninput="calc()"></div>
+        <div class="col" style="flex:2;">
+            <label>Kameran FOV</label>
+            <input type="number" id="fov" placeholder="FOV" oninput="calc()">
+        </div>
+        <div class="col" style="flex:1.5;">
+            <label>Yksikkö</label>
+            <select id="fovUnit" onchange="calc()">
+                <option value="deg">°</option>
+                <option value="mil">Mil</option>
+                <option value="piiru">PV</option>
+                <option value="mrad">Mrad</option>
+            </select>
+        </div>
+        <div class="col" style="flex:1.5;">
+            <label>Kuva px</label>
+            <input type="number" id="res" value="1920" oninput="calc()">
+        </div>
     </div>
-    
+
     <div class="row">
-        <div class="col">
+        <div class="col" style="flex: 2;">
             <label>Maali (m)</label>
-            <div class="row" style="gap:0;">
-                <select id="pre" onchange="applyPre()" style="width:30px;"><option value="2.3">BTR</option><option value="0.5">Mies</option></select>
+            <div class="coord-group">
+                <select id="pre" onchange="applyPre()" style="width: 30%; padding: 5px;">
+                    <option value="" disabled selected>▾</option>
+                    <option value="0.5">0.5</option>
+                    <option value="2.3">2.3</option>
+                    <option value="20">20</option>
+                </select>
                 <input type="number" id="tReal" placeholder="m" oninput="calc()">
             </div>
         </div>
-        <div class="col"><label>Maali px</label><input type="number" id="tPx" placeholder="px" oninput="calc()"></div>
-        <div class="col"><label>Koro (°)</label><input type="number" id="elev" placeholder="±deg" oninput="calc()"></div>
+        <div class="col" style="flex: 1.5;">
+            <label>Maali px</label>
+            <input type="number" id="tPx" placeholder="px" oninput="calc()">
+        </div>
+        <div class="col" style="flex: 1.5;">
+            <label>Koro (°)</label>
+            <input type="number" id="elev" placeholder="±deg" oninput="calc()">
+        </div>
     </div>
 
     <div class="result-box">
-        <div class="res-row"><span>Viistoetäisyys</span><span class="res-val" id="rSlant">---</span></div>
-        <div class="res-row"><span>Maastoetäisyys</span><span class="res-val res-highlight" id="rGround">---</span></div>
-        <div class="res-row"><span>Korkeusero</span><span class="res-val" id="rHeight">---</span></div>
+        <div class="res-row"><span class="res-label">Viistoetäisyys</span><span class="res-val" id="rSlant">---</span></div>
+        <div class="res-row"><span class="res-label">Maastoetäisyys</span><span class="res-val res-highlight" id="rGround">---</span></div>
+        <div class="res-row"><span class="res-label">Korkeusero</span><span class="res-val" id="rHeight">---</span></div>
         
-        <div style="margin-top:10px; border-top:1px solid #444; padding-top:5px;">
-            <div style="font-size:0.7rem; color:#888;">MAALIN KOORDINAATIT</div>
-            <div id="rCoords" style="color:#5dade2; font-family:monospace; font-size:1rem;">---</div>
+        <div style="margin-top:12px; border-top:1px solid #444; padding-top:8px;">
+            <div class="res-label" style="text-align:center; margin-bottom:4px;">MAALIN WGS84</div>
+            <div id="rCoords" style="color:#5dade2; font-family:monospace; font-size:1rem; text-align:center;">---</div>
+            
+            <div class="res-label" style="text-align:center; margin-top:8px; margin-bottom:4px;">GRID SIIRTYMÄ (MGRS)</div>
+            <div id="rShift" style="color:#e0e0e0; font-family:monospace; font-size:1rem; text-align:center;">N: --- E: ---</div>
         </div>
 
         <div class="meter"><div id="j1" class="step"></div><div id="j2" class="step"></div><div id="j3" class="step"></div></div>
@@ -97,79 +199,134 @@
     </div>
 </div>
 
+<div id="infoModal" class="modal" onclick="this.style.display='none'">
+    <div class="modal-content">
+        <h3>Pikaohje</h3>
+        <p><strong>WGS84:</strong> Täytä oma sijainti (Asteet, Minuutit, Sekunnit) saadaksesi maalin koordinaatit.</p>
+        <p><strong>Grid Siirtymä:</strong> Lisää nämä metrit omaan sijaintiisi MGRS-kartalla.</p>
+        <p><strong>Yksiköt:</strong> PV = Piiru (6000), Mil = NATO (6400).</p>
+        <p style="text-align:right; margin-top:20px; color:#2980b9;">Sulje klikkaamalla</p>
+    </div>
+</div>
+
 <script>
-    // PWA Service Worker Rekisteröinti
+    // Service Worker Register
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js')
-        .then(() => console.log('Service Worker Registered'));
+        navigator.serviceWorker.register('./sw.js').catch(console.error);
     }
 
-    // --- LASKENTALOGIIKKA ---
+    // --- MATH UTILS ---
     const toRad = d => d * Math.PI / 180;
     const toDeg = r => r * 180 / Math.PI;
-    
-    function getRad(v, u) {
-        if(!v) return 0;
-        return u === 'deg' ? toRad(v) : v * (2 * Math.PI / 6400);
+
+    function getRad(val, unit) {
+        if (!val) return 0;
+        if (unit === 'deg') return toRad(val);
+        if (unit === 'mil') return val * (2 * Math.PI / 6400);
+        if (unit === 'piiru') return val * (2 * Math.PI / 6000);
+        if (unit === 'mrad') return val / 1000;
+        return 0;
     }
 
+    // Formatter: DD -> DMS
+    function ddToDms(deg, isLat) {
+        const abs = Math.abs(deg);
+        const d = Math.floor(abs);
+        const m = Math.floor((abs - d) * 60);
+        const s = ((abs - d - m/60) * 3600).toFixed(1);
+        const dir = isLat ? (deg >= 0 ? 'N' : 'S') : (deg >= 0 ? 'E' : 'W');
+        return `${d}°${m}'${s}"${dir}`;
+    }
+
+    // --- MAIN CALC ---
     function calc() {
         const fov = parseFloat(document.getElementById('fov').value);
         const res = parseFloat(document.getElementById('res').value);
         const tPx = parseFloat(document.getElementById('tPx').value);
         const tReal = parseFloat(document.getElementById('tReal').value);
         const elev = parseFloat(document.getElementById('elev').value) || 0;
-        
-        if(fov && res && tPx && tReal) {
-            const fovRad = getRad(fov, document.getElementById('fovUnit').value);
-            const angle = (fovRad / res) * tPx;
-            const slant = (tReal / 2) / Math.tan(angle / 2);
-            const ground = slant * Math.cos(toRad(elev));
-            const height = slant * Math.sin(toRad(elev));
 
-            document.getElementById('rSlant').innerText = slant.toFixed(0) + " m";
-            document.getElementById('rGround').innerText = Math.abs(ground).toFixed(0) + " m";
-            document.getElementById('rHeight').innerText = (height>0?"+":"") + height.toFixed(0) + " m";
-            
-            calcCoords(ground);
-            updateJohnson(tPx);
-        } else {
+        // Reset display
+        if (!fov || !res || !tPx || !tReal) {
             document.getElementById('rSlant').innerText = "---";
+            document.getElementById('rGround').innerText = "---";
+            document.getElementById('rHeight').innerText = "---";
+            return;
         }
+
+        // 1. Optics
+        const fovRad = getRad(fov, document.getElementById('fovUnit').value);
+        const angle = (fovRad / res) * tPx;
+        
+        // D = (W/2) / tan(a/2)
+        const slant = (tReal / 2) / Math.tan(angle / 2);
+        const ground = slant * Math.cos(toRad(elev));
+        const height = slant * Math.sin(toRad(elev));
+
+        document.getElementById('rSlant').innerText = slant.toFixed(0) + " m";
+        document.getElementById('rGround').innerText = Math.abs(ground).toFixed(0) + " m";
+        document.getElementById('rHeight').innerText = (height>0?"+":"") + height.toFixed(0) + " m";
+
+        updateJohnson(tPx);
+        calcCoords(ground);
     }
 
     function calcCoords(dist) {
-        const lat = parseFloat(document.getElementById('lat').value);
-        const lon = parseFloat(document.getElementById('lon').value);
+        // Oma Sijainti DMS -> DD
+        const latD = parseFloat(document.getElementById('latD').value);
+        const latM = parseFloat(document.getElementById('latM').value)||0;
+        const latS = parseFloat(document.getElementById('latS').value)||0;
+        const lonD = parseFloat(document.getElementById('lonD').value);
+        const lonM = parseFloat(document.getElementById('lonM').value)||0;
+        const lonS = parseFloat(document.getElementById('lonS').value)||0;
+        
         const azVal = parseFloat(document.getElementById('azimuth').value);
-        
-        if(!lat || !lon || !azVal) {
-            document.getElementById('rCoords').innerText = "---"; return;
+
+        // Jos suunta puuttuu, ei voida laskea mitään
+        if (!azVal) {
+            document.getElementById('rCoords').innerText = "---";
+            document.getElementById('rShift').innerText = "N: --- E: ---";
+            return;
         }
-        
+
         const azRad = getRad(azVal, document.getElementById('azUnit').value);
-        const R = 6371000;
-        const lat1 = toRad(lat); const lon1 = toRad(lon);
-        
+
+        // 2. Grid Shift (MGRS Delta)
+        const dN = dist * Math.cos(azRad);
+        const dE = dist * Math.sin(azRad);
+        document.getElementById('rShift').innerText = `N: ${dN>0?'+':''}${dN.toFixed(0)}m  E: ${dE>0?'+':''}${dE.toFixed(0)}m`;
+
+        // 3. WGS84 Destination
+        if (!latD || !lonD) {
+            document.getElementById('rCoords').innerText = "Syötä Oma Sijainti";
+            return;
+        }
+
+        const lat1 = toRad(latD + latM/60 + latS/3600);
+        const lon1 = toRad(lonD + lonM/60 + lonS/3600);
+        const R = 6371000; 
+
         const lat2 = Math.asin(Math.sin(lat1)*Math.cos(dist/R) + Math.cos(lat1)*Math.sin(dist/R)*Math.cos(azRad));
         const lon2 = lon1 + Math.atan2(Math.sin(azRad)*Math.sin(dist/R)*Math.cos(lat1), Math.cos(dist/R)-Math.sin(lat1)*Math.sin(lat2));
-        
-        document.getElementById('rCoords').innerText = toDeg(lat2).toFixed(5) + ", " + toDeg(lon2).toFixed(5);
+
+        document.getElementById('rCoords').innerHTML = ddToDms(toDeg(lat2), true) + "<br>" + ddToDms(toDeg(lon2), false);
     }
 
+    // --- UI HELPERS ---
     function updateJohnson(px) {
         const j1=document.getElementById('j1'), j2=document.getElementById('j2'), j3=document.getElementById('j3'), t=document.getElementById('jTxt');
         j1.className=j2.className=j3.className="step";
         if(px<2){t.innerText="---"; return;}
         j1.classList.add("active","l1"); t.innerText="HAVAITSEMINEN"; t.style.color="#c0392b";
-        if(px>=8){j2.classList.add("active","l2"); t.innerText="LUOKITTELU"; t.style.color="#f39c12";}
+        if(px>=8){j2.classList.add("active","l2"); t.innerText="LUOKITTELU"; t.style.color="#f39c12"; }
         if(px>=13){j3.classList.add("active","l3"); t.innerText="TUNNISTUS"; t.style.color="#27ae60";}
     }
 
     function applyPre() { document.getElementById('tReal').value = document.getElementById('pre').value; calc(); }
 
-    // Profiilit (Yksinkertaistettu)
-    let profs = JSON.parse(localStorage.getItem('tj_profs') || '{}');
+    // --- PROFILES ---
+    let profs = JSON.parse(localStorage.getItem('tj_profs_v2') || '{}');
+    
     function loadProfile() {
         const p = profs[document.getElementById('profileSelector').value];
         if(p) { 
@@ -180,19 +337,24 @@
         }
     }
     function saveProfile() {
-        const n = prompt("Nimi?"); if(!n)return;
-        profs[n] = { f:document.getElementById('fov').value, r:document.getElementById('res').value, u:document.getElementById('fovUnit').value };
-        localStorage.setItem('tj_profs', JSON.stringify(profs)); updateSel();
+        const n = prompt("Profiilin nimi?"); if(!n)return;
+        profs[n] = { 
+            f:document.getElementById('fov').value, 
+            r:document.getElementById('res').value, 
+            u:document.getElementById('fovUnit').value 
+        };
+        localStorage.setItem('tj_profs_v2', JSON.stringify(profs)); updateSel();
     }
     function updateSel() {
-        const s = document.getElementById('profileSelector'); s.innerHTML='<option>-- Valitse --</option>';
-        for(let k in profs) { let o=document.createElement('option'); o.text=k; s.add(o); }
+        const s = document.getElementById('profileSelector'); s.innerHTML='<option value="">-- Valitse Profiili --</option>';
+        for(let k in profs) { let o=document.createElement('option'); o.value=k; o.text=k; s.add(o); }
     }
     function deleteProfile() { 
         const n=document.getElementById('profileSelector').value; 
-        if(profs[n]) { delete profs[n]; localStorage.setItem('tj_profs',JSON.stringify(profs)); updateSel(); }
+        if(profs[n]) { delete profs[n]; localStorage.setItem('tj_profs_v2',JSON.stringify(profs)); updateSel(); }
     }
-    window.onload = updateSel;
+    window.onload = function() { updateSel(); calc(); };
+
 </script>
 </body>
 </html>
