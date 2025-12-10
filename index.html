@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TJ-Laskuri Pro</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#121212">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon.png"> 
+    
+    <style>
+        /* Tyylit pidetään samana kuin V7, pieniä mobiilioptimointeja */
+        :root { --bg: #121212; --panel: #1e1e1e; --text: #e0e0e0; --accent: #2980b9; --success: #27ae60; --danger: #c0392b; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; display: flex; justify-content: center; }
+        .container { background: var(--panel); padding: 15px; border-radius: 8px; width: 100%; max-width: 500px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        h2 { text-align: center; margin: 5px 0 15px 0; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 1px; color: #888; }
+        
+        /* Inputit mobiiliystävällisiksi */
+        label { display: block; margin-top: 10px; font-size: 0.75rem; color: #888; text-transform: uppercase; }
+        input, select { width: 100%; padding: 10px; background: #2d2d2d; border: 1px solid #333; color: #fff; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
+        .row { display: flex; gap: 8px; }
+        .col { flex: 1; }
+        
+        /* Tulokset */
+        .result-box { background: #252d3a; padding: 15px; border-radius: 6px; margin-top: 20px; border: 1px solid #3a4b61; }
+        .res-row { display: flex; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px solid #3a4b61; padding-bottom: 5px; }
+        .res-val { font-weight: bold; font-family: monospace; font-size: 1.1rem; }
+        .res-highlight { color: var(--success); font-size: 1.4rem; }
+
+        /* Profiilinapit */
+        .btn-group { display: flex; gap: 5px; margin-bottom: 15px; }
+        .btn { padding: 8px; border: none; border-radius: 4px; color: white; font-weight: bold; flex: 1; cursor: pointer; }
+        .btn-save { background: var(--success); } .btn-del { background: var(--danger); }
+
+        /* Johnson Meter */
+        .meter { display: flex; height: 6px; gap: 2px; margin-top: 5px; }
+        .step { flex: 1; background: #333; }
+        .active.l1 { background: var(--danger); } .active.l2 { background: var(--warning); } .active.l3 { background: var(--success); }
+        .j-text { text-align: center; font-size: 0.8rem; margin-top: 4px; font-weight: bold; color: #666; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Tulenjohtolaskuri Pro</h2>
+
+    <div class="btn-group">
+        <select id="profileSelector" onchange="loadProfile()" style="flex: 2;"><option value="">-- Profiili --</option></select>
+        <button class="btn btn-save" onclick="saveProfile()">TALLENNA</button>
+        <button class="btn btn-del" onclick="deleteProfile()">X</button>
+    </div>
+
+    <div style="border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 10px;">
+        <label>Oma Sijainti (WGS84)</label>
+        <div class="row">
+            <input type="number" id="lat" placeholder="Lat (esim 60.1234)" step="0.0001">
+            <input type="number" id="lon" placeholder="Lon (esim 24.5678)" step="0.0001">
+        </div>
+        <div class="row">
+            <div class="col"><label>Suunta</label><input type="number" id="azimuth" placeholder="Suunta" oninput="calc()"></div>
+            <div class="col"><label>Yksikkö</label><select id="azUnit" onchange="calc()"><option value="mil">Mil</option><option value="deg">Deg</option></select></div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col"><label>FOV</label><input type="number" id="fov" placeholder="FOV" oninput="calc()"></div>
+        <div class="col"><label>Yksikkö</label><select id="fovUnit" onchange="calc()"><option value="deg">Deg</option><option value="mil">Mil</option></select></div>
+        <div class="col"><label>Kuva px</label><input type="number" id="res" value="1920" oninput="calc()"></div>
+    </div>
+    
+    <div class="row">
+        <div class="col">
+            <label>Maali (m)</label>
+            <div class="row" style="gap:0;">
+                <select id="pre" onchange="applyPre()" style="width:30px;"><option value="2.3">BTR</option><option value="0.5">Mies</option></select>
+                <input type="number" id="tReal" placeholder="m" oninput="calc()">
+            </div>
+        </div>
+        <div class="col"><label>Maali px</label><input type="number" id="tPx" placeholder="px" oninput="calc()"></div>
+        <div class="col"><label>Koro (°)</label><input type="number" id="elev" placeholder="±deg" oninput="calc()"></div>
+    </div>
+
+    <div class="result-box">
+        <div class="res-row"><span>Viistoetäisyys</span><span class="res-val" id="rSlant">---</span></div>
+        <div class="res-row"><span>Maastoetäisyys</span><span class="res-val res-highlight" id="rGround">---</span></div>
+        <div class="res-row"><span>Korkeusero</span><span class="res-val" id="rHeight">---</span></div>
+        
+        <div style="margin-top:10px; border-top:1px solid #444; padding-top:5px;">
+            <div style="font-size:0.7rem; color:#888;">MAALIN KOORDINAATIT</div>
+            <div id="rCoords" style="color:#5dade2; font-family:monospace; font-size:1rem;">---</div>
+        </div>
+
+        <div class="meter"><div id="j1" class="step"></div><div id="j2" class="step"></div><div id="j3" class="step"></div></div>
+        <div id="jTxt" class="j-text">---</div>
+    </div>
+</div>
+
+<script>
+    // PWA Service Worker Rekisteröinti
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js')
+        .then(() => console.log('Service Worker Registered'));
+    }
+
+    // --- LASKENTALOGIIKKA ---
+    const toRad = d => d * Math.PI / 180;
+    const toDeg = r => r * 180 / Math.PI;
+    
+    function getRad(v, u) {
+        if(!v) return 0;
+        return u === 'deg' ? toRad(v) : v * (2 * Math.PI / 6400);
+    }
+
+    function calc() {
+        const fov = parseFloat(document.getElementById('fov').value);
+        const res = parseFloat(document.getElementById('res').value);
+        const tPx = parseFloat(document.getElementById('tPx').value);
+        const tReal = parseFloat(document.getElementById('tReal').value);
+        const elev = parseFloat(document.getElementById('elev').value) || 0;
+        
+        if(fov && res && tPx && tReal) {
+            const fovRad = getRad(fov, document.getElementById('fovUnit').value);
+            const angle = (fovRad / res) * tPx;
+            const slant = (tReal / 2) / Math.tan(angle / 2);
+            const ground = slant * Math.cos(toRad(elev));
+            const height = slant * Math.sin(toRad(elev));
+
+            document.getElementById('rSlant').innerText = slant.toFixed(0) + " m";
+            document.getElementById('rGround').innerText = Math.abs(ground).toFixed(0) + " m";
+            document.getElementById('rHeight').innerText = (height>0?"+":"") + height.toFixed(0) + " m";
+            
+            calcCoords(ground);
+            updateJohnson(tPx);
+        } else {
+            document.getElementById('rSlant').innerText = "---";
+        }
+    }
+
+    function calcCoords(dist) {
+        const lat = parseFloat(document.getElementById('lat').value);
+        const lon = parseFloat(document.getElementById('lon').value);
+        const azVal = parseFloat(document.getElementById('azimuth').value);
+        
+        if(!lat || !lon || !azVal) {
+            document.getElementById('rCoords').innerText = "---"; return;
+        }
+        
+        const azRad = getRad(azVal, document.getElementById('azUnit').value);
+        const R = 6371000;
+        const lat1 = toRad(lat); const lon1 = toRad(lon);
+        
+        const lat2 = Math.asin(Math.sin(lat1)*Math.cos(dist/R) + Math.cos(lat1)*Math.sin(dist/R)*Math.cos(azRad));
+        const lon2 = lon1 + Math.atan2(Math.sin(azRad)*Math.sin(dist/R)*Math.cos(lat1), Math.cos(dist/R)-Math.sin(lat1)*Math.sin(lat2));
+        
+        document.getElementById('rCoords').innerText = toDeg(lat2).toFixed(5) + ", " + toDeg(lon2).toFixed(5);
+    }
+
+    function updateJohnson(px) {
+        const j1=document.getElementById('j1'), j2=document.getElementById('j2'), j3=document.getElementById('j3'), t=document.getElementById('jTxt');
+        j1.className=j2.className=j3.className="step";
+        if(px<2){t.innerText="---"; return;}
+        j1.classList.add("active","l1"); t.innerText="HAVAITSEMINEN"; t.style.color="#c0392b";
+        if(px>=8){j2.classList.add("active","l2"); t.innerText="LUOKITTELU"; t.style.color="#f39c12";}
+        if(px>=13){j3.classList.add("active","l3"); t.innerText="TUNNISTUS"; t.style.color="#27ae60";}
+    }
+
+    function applyPre() { document.getElementById('tReal').value = document.getElementById('pre').value; calc(); }
+
+    // Profiilit (Yksinkertaistettu)
+    let profs = JSON.parse(localStorage.getItem('tj_profs') || '{}');
+    function loadProfile() {
+        const p = profs[document.getElementById('profileSelector').value];
+        if(p) { 
+            document.getElementById('fov').value=p.f; 
+            document.getElementById('res').value=p.r; 
+            document.getElementById('fovUnit').value=p.u; 
+            calc();
+        }
+    }
+    function saveProfile() {
+        const n = prompt("Nimi?"); if(!n)return;
+        profs[n] = { f:document.getElementById('fov').value, r:document.getElementById('res').value, u:document.getElementById('fovUnit').value };
+        localStorage.setItem('tj_profs', JSON.stringify(profs)); updateSel();
+    }
+    function updateSel() {
+        const s = document.getElementById('profileSelector'); s.innerHTML='<option>-- Valitse --</option>';
+        for(let k in profs) { let o=document.createElement('option'); o.text=k; s.add(o); }
+    }
+    function deleteProfile() { 
+        const n=document.getElementById('profileSelector').value; 
+        if(profs[n]) { delete profs[n]; localStorage.setItem('tj_profs',JSON.stringify(profs)); updateSel(); }
+    }
+    window.onload = updateSel;
+</script>
+</body>
+</html>
