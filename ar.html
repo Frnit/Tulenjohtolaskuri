@@ -3,100 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TJ-Laskuri AR</title>
+    <title>TJ-Laskuri AR v2</title>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: -apple-system, sans-serif; color: white; touch-action: none; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'Courier New', Courier, monospace; color: #0f0; touch-action: none; }
         
         /* Video Container */
         #camContainer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-        video { width: 100%; height: 100%; object-fit: cover; }
+        video { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; }
 
-        /* UI Overlay */
+        /* HUD UI */
         #uiLayer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; }
         
-        /* Top Bar */
-        .top-bar { background: rgba(0,0,0,0.6); padding: 10px; display: flex; gap: 10px; pointer-events: auto; align-items: center;}
-        select, button { background: #333; color: white; border: 1px solid #555; padding: 8px; border-radius: 4px; font-size: 14px; }
-        .back-btn { background: #c0392b; font-weight: bold; width: 40px; }
-
-        /* HUD Center */
-        .hud-center { flex: 1; position: relative; display: flex; justify-content: center; align-items: center; }
+        /* HUD Top: Sensors */
+        .hud-top { background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); padding: 10px; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: auto; }
+        .sensor-data { font-size: 0.9rem; font-weight: bold; text-shadow: 0 1px 2px #000; }
+        .sensor-val { color: #fff; }
         
-        /* The Bracketing Box */
+        /* Controls Top */
+        select, button { background: rgba(0,20,0,0.8); color: #0f0; border: 1px solid #0f0; padding: 8px; border-radius: 4px; font-family: inherit; font-weight: bold; }
+        .back-btn { background: #c0392b; color: #fff; border: 1px solid #fff; }
+
+        /* Bracketing Box */
+        .hud-center { flex: 1; position: relative; display: flex; justify-content: center; align-items: center; }
         #bracketBox {
-            border: 2px solid #0f0; /* Green tactical */
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
-            width: 50%; height: 50%; /* Initial */
-            position: absolute;
+            border: 2px solid #0f0; box-shadow: 0 0 10px rgba(0, 255, 0, 0.4);
+            width: 50%; height: 50%; position: absolute;
             transition: width 0.05s, height 0.05s;
         }
-        /* Crosshair center */
-        #bracketBox::after {
-            content: '+'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            color: rgba(0, 255, 0, 0.5); font-size: 20px;
+        #bracketBox::after { content: '+'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #0f0; font-size: 20px; }
+        #bracketBox::before { 
+            content: attr(data-tgt); position: absolute; top: -20px; left: 0; width:100%; 
+            text-align:center; font-size: 0.8rem; text-shadow: 0 1px 2px #000; color: #fff; 
         }
 
-        /* Result Display */
-        .result-display {
-            position: absolute; bottom: 20%; width: 100%; text-align: center;
-            text-shadow: 0 2px 4px #000; pointer-events: auto;
+        /* Result Area */
+        .result-display { position: absolute; bottom: 25%; width: 100%; text-align: center; text-shadow: 0 2px 4px #000; pointer-events: auto; }
+        .dist-val { font-size: 3.5rem; font-weight: bold; color: #0f0; }
+        .dist-unit { font-size: 1rem; color: #ccc; }
+        
+        /* Big Action Button */
+        .use-btn {
+            background: rgba(0, 255, 0, 0.2); border: 2px solid #0f0; color: #fff;
+            padding: 10px 25px; margin-top: 10px; font-size: 1.1rem; border-radius: 30px;
+            cursor: pointer; text-transform: uppercase; animation: pulse 2s infinite;
         }
-        .dist-val { font-size: 3rem; font-weight: bold; font-family: monospace; color: #0f0; }
-        .dist-label { font-size: 0.9rem; color: #ccc; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(0, 255, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0); } }
 
-        /* Controls Bottom */
-        .controls { background: rgba(0,0,0,0.6); padding: 20px; pointer-events: auto; }
-        
-        /* Slider */
-        input[type=range] { width: 100%; margin: 10px 0; height: 30px; }
-        
-        /* Action Buttons */
+        /* Bottom Controls */
+        .controls { background: rgba(0,0,0,0.7); padding: 15px; pointer-events: auto; border-top: 1px solid #0f0; }
+        input[type=range] { width: 100%; margin: 10px 0; accent-color: #0f0; }
         .action-row { display: flex; gap: 10px; justify-content: center; margin-top: 5px; }
-        .act-btn { padding: 10px 20px; font-weight: bold; text-transform: uppercase; border: 1px solid #fff; border-radius: 20px; cursor: pointer;}
-        .freeze-btn { background: #2980b9; }
-        .calib-btn { background: #f39c12; color: #000; }
+        .act-btn { padding: 8px 15px; border-radius: 4px; border: 1px solid #555; background: #222; color: #ccc; cursor: pointer; }
+        .act-btn.active { background: #0f0; color: #000; }
 
-        /* Calibration Modal */
-        #calibModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100; padding: 20px; box-sizing: border-box; pointer-events: auto;}
-        .modal-content { color: #fff; text-align: center; margin-top: 20%; }
-        .modal-content input { padding: 10px; width: 80px; text-align: center; font-size: 1.2rem; margin: 10px; }
+        /* Modal */
+        #calibModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 100; padding: 20px; box-sizing: border-box; pointer-events: auto;}
+        .modal-content { color: #fff; text-align: center; margin-top: 20%; font-family: sans-serif; }
+        .modal-content input { padding: 10px; width: 80px; text-align: center; font-size: 1.2rem; margin: 10px; background: #333; color: #fff; border: 1px solid #555; }
     </style>
 </head>
 <body>
 
-<div id="camContainer">
-    <video id="video" autoplay playsinline></video>
-</div>
+<div id="camContainer"><video id="video" autoplay playsinline></video></div>
 
 <div id="uiLayer">
-    <div class="top-bar">
-        <button class="back-btn" onclick="location.href='index.html'">⬅</button>
-        <select id="targetSelect" onchange="updateTarget()">
-            <option value="0.5">Mies (0.5m)</option>
-            <option value="1.8">Mies (1.8m)</option>
-            <option value="2.3" selected>BTR / Pas (2.3m)</option>
-            <option value="2.5">Kuorma-auto (2.5m)</option>
-            <option value="3.0">Tankki (3.0m)</option>
-        </select>
-        <div style="flex:1;"></div>
-        <div id="fovDisplay" style="font-size:0.7rem; color:#aaa;">FOV: 60°</div>
+    <div class="hud-top">
+        <div>
+            <button class="back-btn" onclick="location.href='index.html'">⬅ POISTU</button>
+        </div>
+        <div class="sensor-data" style="text-align:right;">
+            <div>SUUNTA: <span id="hudAz" class="sensor-val">---</span> MIL</div>
+            <div style="font-size:0.7rem; color:#aaa;" id="hudGps">GPS: ODOTTAA...</div>
+            <div style="font-size:0.7rem; color:#aaa;" id="fovDisplay">FOV: --°</div>
+        </div>
     </div>
 
     <div class="hud-center">
-        <div id="bracketBox"></div>
+        <div id="bracketBox" data-tgt="MAALI"></div>
     </div>
 
     <div class="result-display">
         <div class="dist-val" id="distOutput">---</div>
-        <div class="dist-label">METRIÄ</div>
+        <div class="dist-unit">METRIÄ</div>
+        <button class="use-btn" onclick="useResult()">✅ KÄYTÄ & PALAA</button>
     </div>
 
     <div class="controls">
+        <div style="display:flex; gap:10px; margin-bottom:5px;">
+            <select id="targetSelect" onchange="updateTarget()" style="flex:1;"></select>
+            <button onclick="openCalib()">⚙</button>
+        </div>
+        
         <input type="range" id="sizeSlider" min="10" max="900" value="300" oninput="updateBox()">
         
         <div class="action-row">
-            <button class="act-btn freeze-btn" onclick="toggleFreeze()">❄️ Jäädytä</button>
-            <button class="act-btn calib-btn" onclick="openCalib()">⚙ Kalibroi</button>
+            <button class="act-btn" id="btnFreeze" onclick="toggleFreeze()">❄️ JÄÄDYTÄ</button>
         </div>
     </div>
 </div>
@@ -104,138 +105,144 @@
 <div id="calibModal">
     <div class="modal-content">
         <h2>Kalibrointi</h2>
-        <p>Jotta mittaus on tarkka, sovelluksen pitää tietää kamerasi kuvakulma.</p>
-        <ol style="text-align:left; padding-left:20px; line-height:1.5;">
-            <li>Aseta tunnettu kohde (esim. ovi 2.0m) tasan <strong>5 metrin</strong> päähän.</li>
-            <li>Säädä taustalla näkyvä laatikko peittämään kohde tasan.</li>
-            <li>Syötä alle: Etäisyys (5m) ja Leveys (2m).</li>
-            <li>Paina Tallenna.</li>
-        </ol>
+        <p>1. Aseta tunnettu kohde tasan <strong>5 metrin</strong> päähän.</p>
+        <p>2. Säädä vihreä laatikko kohteen kokoiseksi.</p>
+        <p>3. Syötä kohteen tiedot:</p>
         <input type="number" id="calDist" value="5" placeholder="Etäisyys"> m <br>
         <input type="number" id="calWidth" value="2.0" placeholder="Leveys"> m <br>
         <br>
-        <button class="act-btn" style="background:#27ae60;" onclick="saveCalibration()">Tallenna FOV</button>
-        <button class="act-btn" style="background:#c0392b; margin-top:10px;" onclick="closeCalib()">Peruuta</button>
+        <button class="act-btn active" onclick="saveCalibration()">TALLENNA</button>
+        <button class="act-btn" onclick="document.getElementById('calibModal').style.display='none'">PERUUTA</button>
     </div>
 </div>
 
 <script>
-    // --- CONFIG ---
-    let targetSize = 2.3; // Default target width (m)
-    let fovDeg = parseFloat(localStorage.getItem('tj_ar_fov')) || 70.0; // Default FOV estimate
+    // --- STATE ---
+    let targetSize = 2.3; 
+    let fovDeg = parseFloat(localStorage.getItem('tj_ar_fov')) || 70.0; 
     let isFrozen = false;
-    
+    let currentDist = 0;
+
     // --- INIT ---
     window.onload = function() {
         startCamera();
+        initSensors();
+        loadTargets();
         updateFovDisplay();
-        updateBox(); // Init calc
+        updateBox();
     };
 
-    // --- CAMERA LOGIC ---
-    function startCamera() {
-        const constraints = {
-            audio: false,
-            video: { facingMode: "environment" } // Rear camera
-        };
+    // --- SHARED LIBRARY LOGIC ---
+    function loadTargets() {
+        const defaultT = [{n:"Mies (0.5m)",s:0.5}, {n:"Mies (1.8m)",s:1.8}, {n:"BTR (2.9m)",s:2.9}, {n:"Auto (1.8m)",s:1.8}];
+        const stored = JSON.parse(localStorage.getItem('tj_targets'));
+        const targets = stored || defaultT; // Use shared list if available
         
-        navigator.mediaDevices.getUserMedia(constraints)
-            .then(stream => {
-                const video = document.getElementById('video');
-                video.srcObject = stream;
-            })
-            .catch(err => {
-                alert("Kameravirhe: Varmista HTTPS ja oikeudet. " + err);
+        const sel = document.getElementById('targetSelect');
+        sel.innerHTML = '';
+        targets.forEach(t => {
+            let opt = document.createElement('option');
+            opt.value = t.s;
+            opt.text = `${t.n} (${t.s}m)`;
+            sel.add(opt);
+        });
+        
+        // Set default to BTR-like size if possible
+        if(sel.options.length > 2) sel.selectedIndex = 2;
+        updateTarget();
+    }
+
+    // --- CAMERA & SENSORS ---
+    function startCamera() {
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+            .then(s => document.getElementById('video').srcObject = s)
+            .catch(e => alert("Kamera: " + e));
+    }
+
+    function initSensors() {
+        // Compass
+        if (window.DeviceOrientationEvent) {
+            window.addEventListener('deviceorientation', e => {
+                let h = e.webkitCompassHeading || (e.alpha ? 360-e.alpha : 0);
+                if (h<0) h+=360; if (h>=360) h-=360;
+                // Show in MIL
+                document.getElementById('hudAz').innerText = Math.round(h * (6400/360));
             });
+        }
+        // GPS
+        if (navigator.geolocation) {
+            navigator.geolocation.watchPosition(p => {
+                const lat = p.coords.latitude.toFixed(4);
+                const lon = p.coords.longitude.toFixed(4);
+                document.getElementById('hudGps').innerText = `${lat}, ${lon}`;
+            }, e => {}, {enableHighAccuracy:true});
+        }
     }
 
     function toggleFreeze() {
-        const video = document.getElementById('video');
-        const btn = document.querySelector('.freeze-btn');
-        if (isFrozen) {
-            video.play();
-            btn.innerText = "❄️ Jäädytä";
-            btn.style.background = "#2980b9";
-        } else {
-            video.pause();
-            btn.innerText = "▶ Jatka";
-            btn.style.background = "#c0392b";
-        }
+        const v = document.getElementById('video');
+        const b = document.getElementById('btnFreeze');
+        if (isFrozen) { v.play(); b.classList.remove('active'); b.innerText="❄️ JÄÄDYTÄ"; }
+        else { v.pause(); b.classList.add('active'); b.innerText="▶ JATKA"; }
         isFrozen = !isFrozen;
     }
 
-    // --- CALCULATION LOGIC ---
+    // --- CALCULATION ---
     function updateTarget() {
-        targetSize = parseFloat(document.getElementById('targetSelect').value);
+        const sel = document.getElementById('targetSelect');
+        targetSize = parseFloat(sel.value);
+        document.getElementById('bracketBox').setAttribute('data-tgt', sel.options[sel.selectedIndex].text);
         calculate();
     }
 
     function updateBox() {
-        const sliderVal = document.getElementById('sizeSlider').value;
-        const box = document.getElementById('bracketBox');
-        
-        // Let's assume square box for simplified targeting of generic shapes, 
-        // or just width based. Let's do width-based bracketing.
-        box.style.width = sliderVal + 'px';
-        box.style.height = (sliderVal * 0.7) + 'px'; // Aspect ratio 4:3 approx
-        
+        const px = document.getElementById('sizeSlider').value;
+        const b = document.getElementById('bracketBox');
+        b.style.width = px + 'px';
+        b.style.height = (px * 0.7) + 'px';
         calculate();
     }
 
     function calculate() {
-        const boxWidthPx = parseInt(document.getElementById('sizeSlider').value);
-        const screenWidthPx = window.innerWidth; // Screen width (video fills screen)
-        
-        // Formula:
-        // Angle subtended = (BoxPx / ScreenPx) * TotalFOV
-        // Dist = (RealSize / 2) / tan(Angle / 2)
-        
+        const boxPx = parseInt(document.getElementById('sizeSlider').value);
+        const screenPx = window.innerWidth;
         const fovRad = fovDeg * (Math.PI / 180);
-        const objAngle = (boxWidthPx / screenWidthPx) * fovRad;
+        const objAngle = (boxPx / screenPx) * fovRad;
         
-        const distance = (targetSize / 2) / Math.tan(objAngle / 2);
-        
-        document.getElementById('distOutput').innerText = Math.round(distance);
+        currentDist = Math.round((targetSize / 2) / Math.tan(objAngle / 2));
+        document.getElementById('distOutput').innerText = currentDist;
+    }
+
+    // --- LOOP-BACK TO INDEX ---
+    function useResult() {
+        if(currentDist > 0) {
+            // Save to shared storage
+            localStorage.setItem('tj_incoming_dist', currentDist);
+            // Go back
+            location.href = 'index.html';
+        } else {
+            alert("Mittaa ensin etäisyys.");
+        }
     }
 
     // --- CALIBRATION ---
-    function openCalib() {
-        document.getElementById('calibModal').style.display = 'block';
-    }
-    
-    function closeCalib() {
-        document.getElementById('calibModal').style.display = 'none';
-    }
-
+    function openCalib() { document.getElementById('calibModal').style.display='block'; }
     function saveCalibration() {
-        // Reverse calculation to find FOV
-        // tan(Angle/2) = (RealSize / 2) / Dist
-        // Angle = 2 * atan( (RealSize/2) / Dist )
-        // FOV = Angle / (BoxPx / ScreenPx)
-        
         const d = parseFloat(document.getElementById('calDist').value);
         const w = parseFloat(document.getElementById('calWidth').value);
-        const boxPx = parseInt(document.getElementById('sizeSlider').value);
-        const screenPx = window.innerWidth;
+        const px = parseInt(document.getElementById('sizeSlider').value);
+        if(!d||!w) return;
         
-        if (!d || !w) { alert("Tarkista arvot"); return; }
+        const angle = 2 * Math.atan((w/2)/d);
+        const newFov = (angle / (px / window.innerWidth)) * (180/Math.PI);
         
-        const angleRad = 2 * Math.atan( (w/2) / d );
-        const calculatedFovRad = angleRad / (boxPx / screenPx);
-        const calculatedFovDeg = calculatedFovRad * (180 / Math.PI);
-        
-        fovDeg = calculatedFovDeg;
-        localStorage.setItem('tj_ar_fov', fovDeg.toFixed(2));
-        
+        localStorage.setItem('tj_ar_fov', newFov.toFixed(2));
+        fovDeg = newFov;
         updateFovDisplay();
-        closeCalib();
-        alert("Kalibroitu! Uusi FOV: " + fovDeg.toFixed(1) + "°");
+        document.getElementById('calibModal').style.display='none';
         calculate();
     }
-
-    function updateFovDisplay() {
-        document.getElementById('fovDisplay').innerText = "FOV: " + fovDeg.toFixed(1) + "°";
-    }
+    function updateFovDisplay() { document.getElementById('fovDisplay').innerText = "FOV: " + fovDeg.toFixed(1) + "°"; }
 
 </script>
 </body>
