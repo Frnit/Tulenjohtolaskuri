@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TJ-Laskuri Pro</title>
+    <title>TJ-Laskuri Pro v8</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1e1e1e">
@@ -13,45 +13,27 @@
 
     <style>
         :root {
-            --bg: #121212;
-            --panel: #1e1e1e;
-            --input-bg: #2d2d2d;
-            --text-main: #e0e0e0;
-            --text-muted: #888;
-            --border: #333;
-            --accent: #2980b9;
-            --success: #27ae60;
-            --warning: #f39c12;
-            --danger: #c0392b;
+            --bg: #121212; --panel: #1e1e1e; --input-bg: #2d2d2d;
+            --text-main: #e0e0e0; --text-muted: #888; --border: #333;
+            --accent: #2980b9; --success: #27ae60; --warning: #f39c12; --danger: #c0392b;
+            --active-sensor: #c0392b; /* Punainen kun sensori on päällä */
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg);
-            color: var(--text-main);
-            margin: 0;
-            padding: 10px;
+            background-color: var(--bg); color: var(--text-main); margin: 0; padding: 10px;
             display: flex; justify-content: center;
         }
         .container {
-            background: var(--panel);
-            padding: 15px;
-            border-radius: 8px;
-            width: 100%;
-            max-width: 500px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
-            padding-bottom: 30px; /* Tilaa scrollaukselle */
+            background: var(--panel); padding: 15px; border-radius: 8px; width: 100%; max-width: 500px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6); padding-bottom: 30px;
         }
-        h2 {
-            text-align: center; margin: 5px 0 15px 0; font-size: 1.1rem;
-            text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);
-        }
+        h2 { text-align: center; margin: 5px 0 15px 0; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
 
         /* Input Styles */
         label { display: block; margin-top: 8px; margin-bottom: 2px; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
         input, select {
-            width: 100%; padding: 10px; background: var(--input-bg);
-            border: 1px solid var(--border); color: #fff;
-            border-radius: 4px; box-sizing: border-box; font-size: 16px; /* 16px estää zoomauksen iPhonessa */
+            width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border); color: #fff;
+            border-radius: 4px; box-sizing: border-box; font-size: 16px;
         }
         input:focus, select:focus { border-color: var(--accent); outline: none; }
         
@@ -59,18 +41,28 @@
         .row { display: flex; gap: 8px; align-items: flex-end; }
         .col { flex: 1; }
         .coord-group { display: flex; gap: 4px; }
-        .coord-group input { text-align: center; padding: 10px 2px; } /* Tiivistetty DMS */
+        .coord-group input { text-align: center; padding: 10px 2px; }
 
         /* Buttons */
         .btn-group { display: flex; gap: 5px; margin-bottom: 15px; background: #252525; padding: 5px; border-radius: 6px; }
         .btn { padding: 10px; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; font-size: 0.8rem;}
         .btn-save { background: var(--success); flex: 1; } 
         .btn-del { background: var(--danger); width: 40px; }
+
+        /* SENSOR BUTTONS */
+        .sensor-btn {
+            background: #333; color: #ccc; border: 1px solid #444; width: 100%; margin-top: 5px;
+            padding: 8px; border-radius: 4px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;
+        }
+        .sensor-btn.active {
+            background: var(--active-sensor); color: white; border-color: var(--active-sensor);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
         
         /* Result Box */
         .result-box {
-            background: #252d3a; border-radius: 6px; padding: 15px;
-            margin-top: 20px; border: 1px solid #3a4b61;
+            background: #252d3a; border-radius: 6px; padding: 15px; margin-top: 20px; border: 1px solid #3a4b61;
         }
         .res-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; border-bottom: 1px solid #3a4b61; padding-bottom: 6px; }
         .res-label { font-size: 0.8rem; color: #a0a0a0; }
@@ -80,9 +72,7 @@
         /* Johnson Meter */
         .meter { display: flex; height: 6px; gap: 2px; margin-top: 8px; }
         .step { flex: 1; background: #333; border-radius: 2px; }
-        .active.l1 { background: var(--danger); } 
-        .active.l2 { background: var(--warning); } 
-        .active.l3 { background: var(--success); }
+        .active.l1 { background: var(--danger); } .active.l2 { background: var(--warning); } .active.l3 { background: var(--success); }
         .j-text { text-align: center; font-size: 0.75rem; margin-top: 4px; font-weight: bold; color: #666; }
 
         /* Modal */
@@ -121,8 +111,11 @@
                 <input type="number" id="lonS" placeholder='"' oninput="calc()">
             </div>
         </div>
+        <button id="btnGps" class="sensor-btn" onclick="toggleGPS()">
+            <span>📍</span> Hae GPS Sijainti
+        </button>
 
-        <div class="row">
+        <div class="row" style="margin-top:15px;">
             <div class="col" style="flex: 2;">
                 <label>Tähystyssuunta</label>
                 <input type="number" id="azimuth" placeholder="Suunta" oninput="calc()">
@@ -136,6 +129,9 @@
                 </select>
             </div>
         </div>
+        <button id="btnCompass" class="sensor-btn" onclick="toggleCompass()">
+            <span>🧭</span> Hae Kompassi
+        </button>
     </div>
 
     <div class="row">
@@ -201,21 +197,20 @@
 
 <div id="infoModal" class="modal" onclick="this.style.display='none'">
     <div class="modal-content">
-        <h3>Pikaohje</h3>
-        <p><strong>WGS84:</strong> Täytä oma sijainti (Asteet, Minuutit, Sekunnit) saadaksesi maalin koordinaatit.</p>
-        <p><strong>Grid Siirtymä:</strong> Lisää nämä metrit omaan sijaintiisi MGRS-kartalla.</p>
-        <p><strong>Yksiköt:</strong> PV = Piiru (6000), Mil = NATO (6400).</p>
-        <p style="text-align:right; margin-top:20px; color:#2980b9;">Sulje klikkaamalla</p>
+        <h3>Ohjeet</h3>
+        <p><strong>GPS & Kompassi:</strong> Vaatii HTTPS-yhteyden. Paina nappeja aktivoidaksesi.</p>
+        <p><strong>iPhone Käyttäjät:</strong> Kompassi vaatii luvan (Allow) ensimmäisellä kerralla.</p>
+        <p><strong>WGS84:</strong> Koordinaatit syötetään muodossa Asteet, Minuutit, Sekunnit.</p>
+        <p style="text-align:right; margin-top:20px; color:#2980b9;">Sulje</p>
     </div>
 </div>
 
 <script>
-    // Service Worker Register
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js').catch(console.error);
     }
 
-    // --- MATH UTILS ---
+    // --- MATH & UTILS ---
     const toRad = d => d * Math.PI / 180;
     const toDeg = r => r * 180 / Math.PI;
 
@@ -228,14 +223,130 @@
         return 0;
     }
 
-    // Formatter: DD -> DMS
-    function ddToDms(deg, isLat) {
+    function ddToDmsSplit(deg) {
         const abs = Math.abs(deg);
         const d = Math.floor(abs);
         const m = Math.floor((abs - d) * 60);
         const s = ((abs - d - m/60) * 3600).toFixed(1);
+        return { d: d * (deg < 0 ? -1 : 1), m: m, s: s };
+    }
+
+    function ddToDmsStr(deg, isLat) {
+        const p = ddToDmsSplit(deg);
         const dir = isLat ? (deg >= 0 ? 'N' : 'S') : (deg >= 0 ? 'E' : 'W');
-        return `${d}°${m}'${s}"${dir}`;
+        return `${Math.abs(p.d)}°${p.m}'${p.s}"${dir}`;
+    }
+
+    // --- SENSOR LOGIC ---
+    let watchId = null;
+    let compassActive = false;
+
+    // 1. GPS TOGGLE
+    function toggleGPS() {
+        const btn = document.getElementById('btnGps');
+        
+        if (watchId) {
+            // STOP
+            navigator.geolocation.clearWatch(watchId);
+            watchId = null;
+            btn.classList.remove('active');
+            btn.innerHTML = '<span>📍</span> Hae GPS Sijainti';
+        } else {
+            // START
+            if (!navigator.geolocation) { alert("Selaimesi ei tue GPS:ää"); return; }
+            btn.classList.add('active');
+            btn.innerHTML = '<span>📍</span> Päivitetään...';
+            
+            watchId = navigator.geolocation.watchPosition((pos) => {
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                
+                // Täytä kentät (Lat)
+                const latP = ddToDmsSplit(lat);
+                document.getElementById('latD').value = latP.d;
+                document.getElementById('latM').value = latP.m;
+                document.getElementById('latS').value = latP.s;
+
+                // Täytä kentät (Lon)
+                const lonP = ddToDmsSplit(lon);
+                document.getElementById('lonD').value = lonP.d;
+                document.getElementById('lonM').value = lonP.m;
+                document.getElementById('lonS').value = lonP.s;
+                
+                calc(); // Päivitä laskut heti
+            }, (err) => {
+                console.error(err);
+                alert("GPS Virhe. Varmista HTTPS ja luvat.");
+                toggleGPS(); // Reset button
+            }, { enableHighAccuracy: true });
+        }
+    }
+
+    // 2. COMPASS TOGGLE
+    function toggleCompass() {
+        const btn = document.getElementById('btnCompass');
+
+        if (compassActive) {
+            // STOP
+            window.removeEventListener('deviceorientation', handleOrientation);
+            compassActive = false;
+            btn.classList.remove('active');
+            btn.innerHTML = '<span>🧭</span> Hae Kompassi';
+        } else {
+            // START
+            // iOS Permission Check
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission()
+                    .then(response => {
+                        if (response === 'granted') {
+                            startCompass(btn);
+                        } else {
+                            alert("Lupa evätty.");
+                        }
+                    })
+                    .catch(console.error);
+            } else {
+                // Android / Non-iOS
+                startCompass(btn);
+            }
+        }
+    }
+
+    function startCompass(btn) {
+        window.addEventListener('deviceorientation', handleOrientation);
+        compassActive = true;
+        btn.classList.add('active');
+        btn.innerHTML = '<span>🧭</span> Seurataan...';
+    }
+
+    function handleOrientation(e) {
+        let heading = 0;
+        
+        // iOS
+        if (e.webkitCompassHeading) {
+            heading = e.webkitCompassHeading;
+        } 
+        // Android / Standard (absolute)
+        else if (e.alpha) {
+            heading = 360 - e.alpha; // Yksinkertaistettu, saattaa vaatia 'absolute' lipun
+        }
+
+        if (heading) {
+            // Normalisoi 0-360
+            if (heading < 0) heading += 360;
+            if (heading >= 360) heading -= 360;
+
+            const unit = document.getElementById('azUnit').value;
+            let displayVal = heading;
+
+            // Muunna yksikköön
+            if (unit === 'mil') displayVal = heading * (6400 / 360);
+            if (unit === 'piiru') displayVal = heading * (6000 / 360);
+            
+            // Pyöristä ja aseta
+            document.getElementById('azimuth').value = Math.round(displayVal);
+            calc();
+        }
     }
 
     // --- MAIN CALC ---
@@ -246,7 +357,7 @@
         const tReal = parseFloat(document.getElementById('tReal').value);
         const elev = parseFloat(document.getElementById('elev').value) || 0;
 
-        // Reset display
+        // Reset inputs
         if (!fov || !res || !tPx || !tReal) {
             document.getElementById('rSlant').innerText = "---";
             document.getElementById('rGround').innerText = "---";
@@ -282,7 +393,6 @@
         
         const azVal = parseFloat(document.getElementById('azimuth').value);
 
-        // Jos suunta puuttuu, ei voida laskea mitään
         if (!azVal) {
             document.getElementById('rCoords').innerText = "---";
             document.getElementById('rShift').innerText = "N: --- E: ---";
@@ -291,7 +401,7 @@
 
         const azRad = getRad(azVal, document.getElementById('azUnit').value);
 
-        // 2. Grid Shift (MGRS Delta)
+        // 2. Grid Shift
         const dN = dist * Math.cos(azRad);
         const dE = dist * Math.sin(azRad);
         document.getElementById('rShift').innerText = `N: ${dN>0?'+':''}${dN.toFixed(0)}m  E: ${dE>0?'+':''}${dE.toFixed(0)}m`;
@@ -309,7 +419,7 @@
         const lat2 = Math.asin(Math.sin(lat1)*Math.cos(dist/R) + Math.cos(lat1)*Math.sin(dist/R)*Math.cos(azRad));
         const lon2 = lon1 + Math.atan2(Math.sin(azRad)*Math.sin(dist/R)*Math.cos(lat1), Math.cos(dist/R)-Math.sin(lat1)*Math.sin(lat2));
 
-        document.getElementById('rCoords').innerHTML = ddToDms(toDeg(lat2), true) + "<br>" + ddToDms(toDeg(lon2), false);
+        document.getElementById('rCoords').innerHTML = ddToDmsStr(toDeg(lat2), true) + "<br>" + ddToDmsStr(toDeg(lon2), false);
     }
 
     // --- UI HELPERS ---
@@ -326,23 +436,16 @@
 
     // --- PROFILES ---
     let profs = JSON.parse(localStorage.getItem('tj_profs_v2') || '{}');
-    
     function loadProfile() {
         const p = profs[document.getElementById('profileSelector').value];
         if(p) { 
-            document.getElementById('fov').value=p.f; 
-            document.getElementById('res').value=p.r; 
-            document.getElementById('fovUnit').value=p.u; 
+            document.getElementById('fov').value=p.f; document.getElementById('res').value=p.r; document.getElementById('fovUnit').value=p.u; 
             calc();
         }
     }
     function saveProfile() {
         const n = prompt("Profiilin nimi?"); if(!n)return;
-        profs[n] = { 
-            f:document.getElementById('fov').value, 
-            r:document.getElementById('res').value, 
-            u:document.getElementById('fovUnit').value 
-        };
+        profs[n] = { f:document.getElementById('fov').value, r:document.getElementById('res').value, u:document.getElementById('fovUnit').value };
         localStorage.setItem('tj_profs_v2', JSON.stringify(profs)); updateSel();
     }
     function updateSel() {
@@ -354,7 +457,6 @@
         if(profs[n]) { delete profs[n]; localStorage.setItem('tj_profs_v2',JSON.stringify(profs)); updateSel(); }
     }
     window.onload = function() { updateSel(); calc(); };
-
 </script>
 </body>
 </html>
