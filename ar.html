@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TJ-Laskuri AR</title>
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; font-family: -apple-system, sans-serif; color: white; touch-action: none; }
+        
+        /* Video Container */
+        #camContainer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        video { width: 100%; height: 100%; object-fit: cover; }
+
+        /* UI Overlay */
+        #uiLayer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; }
+        
+        /* Top Bar */
+        .top-bar { background: rgba(0,0,0,0.6); padding: 10px; display: flex; gap: 10px; pointer-events: auto; align-items: center;}
+        select, button { background: #333; color: white; border: 1px solid #555; padding: 8px; border-radius: 4px; font-size: 14px; }
+        .back-btn { background: #c0392b; font-weight: bold; width: 40px; }
+
+        /* HUD Center */
+        .hud-center { flex: 1; position: relative; display: flex; justify-content: center; align-items: center; }
+        
+        /* The Bracketing Box */
+        #bracketBox {
+            border: 2px solid #0f0; /* Green tactical */
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+            width: 50%; height: 50%; /* Initial */
+            position: absolute;
+            transition: width 0.05s, height 0.05s;
+        }
+        /* Crosshair center */
+        #bracketBox::after {
+            content: '+'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: rgba(0, 255, 0, 0.5); font-size: 20px;
+        }
+
+        /* Result Display */
+        .result-display {
+            position: absolute; bottom: 20%; width: 100%; text-align: center;
+            text-shadow: 0 2px 4px #000; pointer-events: auto;
+        }
+        .dist-val { font-size: 3rem; font-weight: bold; font-family: monospace; color: #0f0; }
+        .dist-label { font-size: 0.9rem; color: #ccc; }
+
+        /* Controls Bottom */
+        .controls { background: rgba(0,0,0,0.6); padding: 20px; pointer-events: auto; }
+        
+        /* Slider */
+        input[type=range] { width: 100%; margin: 10px 0; height: 30px; }
+        
+        /* Action Buttons */
+        .action-row { display: flex; gap: 10px; justify-content: center; margin-top: 5px; }
+        .act-btn { padding: 10px 20px; font-weight: bold; text-transform: uppercase; border: 1px solid #fff; border-radius: 20px; cursor: pointer;}
+        .freeze-btn { background: #2980b9; }
+        .calib-btn { background: #f39c12; color: #000; }
+
+        /* Calibration Modal */
+        #calibModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100; padding: 20px; box-sizing: border-box; pointer-events: auto;}
+        .modal-content { color: #fff; text-align: center; margin-top: 20%; }
+        .modal-content input { padding: 10px; width: 80px; text-align: center; font-size: 1.2rem; margin: 10px; }
+    </style>
+</head>
+<body>
+
+<div id="camContainer">
+    <video id="video" autoplay playsinline></video>
+</div>
+
+<div id="uiLayer">
+    <div class="top-bar">
+        <button class="back-btn" onclick="location.href='index.html'">⬅</button>
+        <select id="targetSelect" onchange="updateTarget()">
+            <option value="0.5">Mies (0.5m)</option>
+            <option value="1.8">Mies (1.8m)</option>
+            <option value="2.3" selected>BTR / Pas (2.3m)</option>
+            <option value="2.5">Kuorma-auto (2.5m)</option>
+            <option value="3.0">Tankki (3.0m)</option>
+        </select>
+        <div style="flex:1;"></div>
+        <div id="fovDisplay" style="font-size:0.7rem; color:#aaa;">FOV: 60°</div>
+    </div>
+
+    <div class="hud-center">
+        <div id="bracketBox"></div>
+    </div>
+
+    <div class="result-display">
+        <div class="dist-val" id="distOutput">---</div>
+        <div class="dist-label">METRIÄ</div>
+    </div>
+
+    <div class="controls">
+        <input type="range" id="sizeSlider" min="10" max="900" value="300" oninput="updateBox()">
+        
+        <div class="action-row">
+            <button class="act-btn freeze-btn" onclick="toggleFreeze()">❄️ Jäädytä</button>
+            <button class="act-btn calib-btn" onclick="openCalib()">⚙ Kalibroi</button>
+        </div>
+    </div>
+</div>
+
+<div id="calibModal">
+    <div class="modal-content">
+        <h2>Kalibrointi</h2>
+        <p>Jotta mittaus on tarkka, sovelluksen pitää tietää kamerasi kuvakulma.</p>
+        <ol style="text-align:left; padding-left:20px; line-height:1.5;">
+            <li>Aseta tunnettu kohde (esim. ovi 2.0m) tasan <strong>5 metrin</strong> päähän.</li>
+            <li>Säädä taustalla näkyvä laatikko peittämään kohde tasan.</li>
+            <li>Syötä alle: Etäisyys (5m) ja Leveys (2m).</li>
+            <li>Paina Tallenna.</li>
+        </ol>
+        <input type="number" id="calDist" value="5" placeholder="Etäisyys"> m <br>
+        <input type="number" id="calWidth" value="2.0" placeholder="Leveys"> m <br>
+        <br>
+        <button class="act-btn" style="background:#27ae60;" onclick="saveCalibration()">Tallenna FOV</button>
+        <button class="act-btn" style="background:#c0392b; margin-top:10px;" onclick="closeCalib()">Peruuta</button>
+    </div>
+</div>
+
+<script>
+    // --- CONFIG ---
+    let targetSize = 2.3; // Default target width (m)
+    let fovDeg = parseFloat(localStorage.getItem('tj_ar_fov')) || 70.0; // Default FOV estimate
+    let isFrozen = false;
+    
+    // --- INIT ---
+    window.onload = function() {
+        startCamera();
+        updateFovDisplay();
+        updateBox(); // Init calc
+    };
+
+    // --- CAMERA LOGIC ---
+    function startCamera() {
+        const constraints = {
+            audio: false,
+            video: { facingMode: "environment" } // Rear camera
+        };
+        
+        navigator.mediaDevices.getUserMedia(constraints)
+            .then(stream => {
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+            })
+            .catch(err => {
+                alert("Kameravirhe: Varmista HTTPS ja oikeudet. " + err);
+            });
+    }
+
+    function toggleFreeze() {
+        const video = document.getElementById('video');
+        const btn = document.querySelector('.freeze-btn');
+        if (isFrozen) {
+            video.play();
+            btn.innerText = "❄️ Jäädytä";
+            btn.style.background = "#2980b9";
+        } else {
+            video.pause();
+            btn.innerText = "▶ Jatka";
+            btn.style.background = "#c0392b";
+        }
+        isFrozen = !isFrozen;
+    }
+
+    // --- CALCULATION LOGIC ---
+    function updateTarget() {
+        targetSize = parseFloat(document.getElementById('targetSelect').value);
+        calculate();
+    }
+
+    function updateBox() {
+        const sliderVal = document.getElementById('sizeSlider').value;
+        const box = document.getElementById('bracketBox');
+        
+        // Let's assume square box for simplified targeting of generic shapes, 
+        // or just width based. Let's do width-based bracketing.
+        box.style.width = sliderVal + 'px';
+        box.style.height = (sliderVal * 0.7) + 'px'; // Aspect ratio 4:3 approx
+        
+        calculate();
+    }
+
+    function calculate() {
+        const boxWidthPx = parseInt(document.getElementById('sizeSlider').value);
+        const screenWidthPx = window.innerWidth; // Screen width (video fills screen)
+        
+        // Formula:
+        // Angle subtended = (BoxPx / ScreenPx) * TotalFOV
+        // Dist = (RealSize / 2) / tan(Angle / 2)
+        
+        const fovRad = fovDeg * (Math.PI / 180);
+        const objAngle = (boxWidthPx / screenWidthPx) * fovRad;
+        
+        const distance = (targetSize / 2) / Math.tan(objAngle / 2);
+        
+        document.getElementById('distOutput').innerText = Math.round(distance);
+    }
+
+    // --- CALIBRATION ---
+    function openCalib() {
+        document.getElementById('calibModal').style.display = 'block';
+    }
+    
+    function closeCalib() {
+        document.getElementById('calibModal').style.display = 'none';
+    }
+
+    function saveCalibration() {
+        // Reverse calculation to find FOV
+        // tan(Angle/2) = (RealSize / 2) / Dist
+        // Angle = 2 * atan( (RealSize/2) / Dist )
+        // FOV = Angle / (BoxPx / ScreenPx)
+        
+        const d = parseFloat(document.getElementById('calDist').value);
+        const w = parseFloat(document.getElementById('calWidth').value);
+        const boxPx = parseInt(document.getElementById('sizeSlider').value);
+        const screenPx = window.innerWidth;
+        
+        if (!d || !w) { alert("Tarkista arvot"); return; }
+        
+        const angleRad = 2 * Math.atan( (w/2) / d );
+        const calculatedFovRad = angleRad / (boxPx / screenPx);
+        const calculatedFovDeg = calculatedFovRad * (180 / Math.PI);
+        
+        fovDeg = calculatedFovDeg;
+        localStorage.setItem('tj_ar_fov', fovDeg.toFixed(2));
+        
+        updateFovDisplay();
+        closeCalib();
+        alert("Kalibroitu! Uusi FOV: " + fovDeg.toFixed(1) + "°");
+        calculate();
+    }
+
+    function updateFovDisplay() {
+        document.getElementById('fovDisplay').innerText = "FOV: " + fovDeg.toFixed(1) + "°";
+    }
+
+</script>
+</body>
+</html>
