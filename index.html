@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TJ-Laskuri Pro v10</title>
+    <title>TJ-Laskuri Pro v11</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1e1e1e">
@@ -25,9 +25,26 @@
         }
         .container {
             background: var(--panel); padding: 0; border-radius: 8px; width: 100%; max-width: 500px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.6); overflow: hidden; padding-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6); overflow: hidden; padding-bottom: 20px; position: relative;
         }
         
+        /* HEADER & NAVIGATION */
+        .header-bar { padding: 15px 15px 5px 15px; text-align: center; position: relative; }
+        h2 { margin: 0; font-size: 1.1rem; color: var(--text-muted); letter-spacing: 1px; }
+        
+        .info-btn { position: absolute; top: 15px; right: 15px; background: #333; color: #fff; border:none; width:28px; height:28px; border-radius:50%; font-weight:bold; cursor: pointer; z-index: 10;}
+        
+        /* AR LINK BUTTON */
+        .ar-link-btn {
+            background: linear-gradient(135deg, #2c3e50, #000); 
+            border: 1px solid #444; color: #fff;
+            width: calc(100% - 30px); margin: 10px 15px 15px 15px; padding: 12px;
+            border-radius: 6px; font-weight: bold; cursor: pointer;
+            display: flex; justify-content: center; align-items: center; gap: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3); transition: 0.2s;
+        }
+        .ar-link-btn:active { transform: scale(0.98); }
+
         /* TABS */
         .tab-bar { display: flex; background: #111; border-bottom: 1px solid var(--border); }
         .tab {
@@ -39,8 +56,7 @@
 
         .content-area { padding: 15px; }
 
-        /* COMMON STYLES */
-        h2 { text-align: center; margin: 5px 0 15px 0; font-size: 1.1rem; color: var(--text-muted); }
+        /* INPUTS & UTILS */
         label { display: block; margin-top: 8px; margin-bottom: 2px; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
         input, select {
             width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border); color: #fff;
@@ -64,15 +80,13 @@
         .sensor-btn.active { background: var(--active-sensor); color: white; border-color: var(--active-sensor); animation: pulse 2s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
         
-        /* SHARE BUTTON */
         .share-btn {
             background: var(--accent); color: white; border: none; width: 100%; margin-top: 15px;
             padding: 12px; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer;
             display: flex; align-items: center; justify-content: center; gap: 8px;
         }
-        .share-btn:active { opacity: 0.8; }
 
-        /* RESULT BOX */
+        /* RESULTS */
         .result-box {
             background: #252d3a; border-radius: 6px; padding: 15px; margin-top: 20px; border: 1px solid #3a4b61;
         }
@@ -80,13 +94,10 @@
         .res-label { font-size: 0.8rem; color: #a0a0a0; }
         .res-val { font-weight: bold; font-family: monospace; font-size: 1.1rem; color: #fff; }
         .res-highlight { color: var(--success); font-size: 1.4rem; }
-        
-        /* MGRS Display */
         .mgrs-box {
             background: #1a212b; border: 1px solid #5dade2; color: #5dade2;
             font-family: monospace; font-size: 1.3rem; font-weight: bold;
-            padding: 10px; text-align: center; border-radius: 4px; margin: 10px 0;
-            letter-spacing: 1px;
+            padding: 10px; text-align: center; border-radius: 4px; margin: 10px 0; letter-spacing: 1px;
         }
 
         .meter { display: flex; height: 6px; gap: 2px; margin-top: 8px; }
@@ -94,10 +105,9 @@
         .active.l1 { background: var(--danger); } .active.l2 { background: var(--warning); } .active.l3 { background: var(--success); }
         .j-text { text-align: center; font-size: 0.75rem; margin-top: 4px; font-weight: bold; color: #666; }
 
-        .info-btn { position: absolute; top: 10px; right: 10px; background: #333; color: #fff; border:none; width:25px; height:25px; border-radius:50%; font-weight:bold; z-index: 10;}
+        /* MODALS */
         .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); }
         .modal-content { background: var(--panel); margin: 10% auto; padding: 20px; width: 90%; max-width: 450px; border-radius: 8px; border: 1px solid #444; max-height: 80vh; overflow-y: auto; }
-        
         .target-list { list-style: none; padding: 0; margin: 10px 0; }
         .target-item { display: flex; justify-content: space-between; background: #2d2d2d; padding: 10px; margin-bottom: 5px; border-radius: 4px; align-items: center;}
         .target-item button { background: var(--danger); border: none; color: white; width: 25px; height: 25px; border-radius: 4px; cursor: pointer; }
@@ -108,7 +118,14 @@
 <body>
 
 <div class="container">
-    <button class="info-btn" onclick="openInfo()">i</button>
+    <div class="header-bar">
+        <h2>TJ-Laskuri Pro</h2>
+        <button class="info-btn" onclick="openInfo()">i</button>
+    </div>
+
+    <button class="ar-link-btn" onclick="location.href='ar.html'">
+        <span>📷</span> Siirry AR-Tähtäimeen (Beta) ➔
+    </button>
     
     <div class="tab-bar">
         <button class="tab active" id="tabDist" onclick="setTab('dist')">Laske Etäisyys</button>
@@ -238,9 +255,7 @@
             <div class="meter"><div id="j1" class="step"></div><div id="j2" class="step"></div><div id="j3" class="step"></div></div>
             <div id="jTxt" class="j-text">---</div>
 
-            <button class="share-btn" onclick="shareData()">
-                📤 Jaa havainto
-            </button>
+            <button class="share-btn" onclick="shareData()">📤 Jaa havainto</button>
         </div>
     </div>
 </div>
@@ -261,240 +276,66 @@
 <div id="infoModal" class="modal" onclick="this.style.display='none'">
     <div class="modal-content">
         <h3>Ohjeet</h3>
+        <p><strong>AR-Tähtäin:</strong> Mittaa etäisyyden suoraan kameralla. Muista kalibroida ennen käyttöä!</p>
         <p><strong>MGRS:</strong> Laskuri muuntaa WGS84-koordinaatit automaattisesti MGRS-ruudukkoon.</p>
-        <p><strong>Jaa:</strong> Jakaa havainnon tekstimuodossa muihin sovelluksiin.</p>
+        <p><strong>Jaa:</strong> Jakaa havainnon muihin sovelluksiin.</p>
         <p style="text-align:right; margin-top:20px; color:#2980b9;">Sulje</p>
     </div>
 </div>
 
 <script>
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(console.error);
-
     let mode = 'dist'; 
     const defaultTargets = [{n:"Mies (hartiat)",s:0.5},{n:"Mies (pituus)",s:1.8},{n:"Henkilöauto",s:1.8},{n:"BTR / Pas",s:2.9},{n:"Kuorma-auto",s:2.5},{n:"Lennokki",s:2.5},{n:"Hävittäjä",s:15.0},{n:"Matkustajakone",s:60.0}];
     let targets = JSON.parse(localStorage.getItem('tj_targets') || JSON.stringify(defaultTargets));
-
     function initTargets() {
         const sel = document.getElementById('targetSelect'); sel.innerHTML='<option value="" disabled selected>▾ Valitse</option>';
         targets.forEach(t=>{let o=document.createElement('option');o.value=t.s;o.text=`${t.n} (${t.s}m)`;sel.add(o);});
         const l = document.getElementById('targetList'); l.innerHTML='';
         targets.forEach((t,i)=>{let li=document.createElement('li');li.className='target-item';li.innerHTML=`<span>${t.n} (${t.s}m)</span> <button onclick="delT(${i})">X</button>`;l.appendChild(li);});
     }
-    function addTarget(){
-        const n=document.getElementById('newTgtName').value, s=parseFloat(document.getElementById('newTgtSize').value);
-        if(n&&s){targets.push({n:n,s:s}); localStorage.setItem('tj_targets',JSON.stringify(targets)); initTargets(); document.getElementById('newTgtName').value='';document.getElementById('newTgtSize').value='';}
-    }
+    function addTarget(){const n=document.getElementById('newTgtName').value, s=parseFloat(document.getElementById('newTgtSize').value);if(n&&s){targets.push({n:n,s:s}); localStorage.setItem('tj_targets',JSON.stringify(targets)); initTargets(); document.getElementById('newTgtName').value='';document.getElementById('newTgtSize').value='';}}
     function delT(i){if(confirm('Poista?')){targets.splice(i,1); localStorage.setItem('tj_targets',JSON.stringify(targets)); initTargets();}}
     function applyTarget(){document.getElementById('tReal').value=document.getElementById('targetSelect').value; calc();}
     function openTargetManager(){document.getElementById('targetModal').style.display='block';}
-
-    function setTab(m){
-        mode=m;
-        document.getElementById('tabDist').className=m==='dist'?'tab active':'tab';
-        document.getElementById('tabSize').className=m==='size'?'tab active':'tab';
-        document.getElementById('viewDist').className=m==='dist'?'':'hidden';
-        document.getElementById('viewSize').className=m==='size'?'':'hidden';
-        document.getElementById('resGroupDist').className=m==='dist'?'':'hidden';
-        document.getElementById('resGroupSize').className=m==='size'?'':'hidden';
-        calc();
-    }
-
+    function setTab(m){mode=m;document.getElementById('tabDist').className=m==='dist'?'tab active':'tab';document.getElementById('tabSize').className=m==='size'?'tab active':'tab';document.getElementById('viewDist').className=m==='dist'?'':'hidden';document.getElementById('viewSize').className=m==='size'?'':'hidden';document.getElementById('resGroupDist').className=m==='dist'?'':'hidden';document.getElementById('resGroupSize').className=m==='size'?'':'hidden';calc();}
     const toRad=d=>d*Math.PI/180, toDeg=r=>r*180/Math.PI;
     function getRad(v,u){if(!v)return 0; if(u==='deg')return toRad(v); if(u==='mil')return v*(2*Math.PI/6400); if(u==='piiru')return v*(2*Math.PI/6000); return v/1000;}
-
-    // MAIN CALC
     function calc() {
-        const fov = parseFloat(document.getElementById('fov').value);
-        const res = parseFloat(document.getElementById('res').value);
-        const tPx = parseFloat(document.getElementById('tPx').value);
-        const elev = parseFloat(document.getElementById('elev').value) || 0;
-        let ground = 0;
-
+        const fov = parseFloat(document.getElementById('fov').value); const res = parseFloat(document.getElementById('res').value); const tPx = parseFloat(document.getElementById('tPx').value); const elev = parseFloat(document.getElementById('elev').value) || 0; let ground = 0;
         if(!fov || !res || !tPx) { resetRes(); return; }
         const angle = (getRad(fov, document.getElementById('fovUnit').value) / res) * tPx;
-
         if (mode === 'dist') {
-            const tReal = parseFloat(document.getElementById('tReal').value);
-            if(!tReal) { resetRes(); return; }
-            const slant = (tReal / 2) / Math.tan(angle / 2);
-            ground = slant * Math.cos(toRad(elev));
-            const height = slant * Math.sin(toRad(elev));
-            document.getElementById('rSlant').innerText = slant.toFixed(0) + " m";
-            document.getElementById('rGround').innerText = Math.abs(ground).toFixed(0) + " m";
-            document.getElementById('rHeight').innerText = (height>0?"+":"") + height.toFixed(0) + " m";
+            const tReal = parseFloat(document.getElementById('tReal').value); if(!tReal) { resetRes(); return; }
+            const slant = (tReal / 2) / Math.tan(angle / 2); ground = slant * Math.cos(toRad(elev)); const height = slant * Math.sin(toRad(elev));
+            document.getElementById('rSlant').innerText = slant.toFixed(0) + " m"; document.getElementById('rGround').innerText = Math.abs(ground).toFixed(0) + " m"; document.getElementById('rHeight').innerText = (height>0?"+":"") + height.toFixed(0) + " m";
         } else {
-            const knownDist = parseFloat(document.getElementById('knownDist').value);
-            if(!knownDist) { resetRes(); return; }
-            const slant = knownDist / Math.cos(toRad(elev));
-            const size = 2 * slant * Math.tan(angle / 2);
-            document.getElementById('rSize').innerText = size.toFixed(2) + " m";
-            ground = knownDist;
-            const height = slant * Math.sin(toRad(elev));
-            document.getElementById('rHeight').innerText = (height>0?"+":"") + height.toFixed(0) + " m";
+            const knownDist = parseFloat(document.getElementById('knownDist').value); if(!knownDist) { resetRes(); return; }
+            const slant = knownDist / Math.cos(toRad(elev)); const size = 2 * slant * Math.tan(angle / 2); ground = knownDist; const height = slant * Math.sin(toRad(elev));
+            document.getElementById('rSize').innerText = size.toFixed(2) + " m"; document.getElementById('rHeight').innerText = (height>0?"+":"") + height.toFixed(0) + " m";
         }
-
-        updateJohnson(tPx);
-        calcCoords(ground);
+        updateJohnson(tPx); calcCoords(ground);
     }
-
-    function resetRes() {
-        document.getElementById('rSlant').innerText="---"; document.getElementById('rGround').innerText="---"; 
-        document.getElementById('rSize').innerText="---"; document.getElementById('rMgrs').innerText="---";
-    }
-    
-    // --- SHARE FUNCTION ---
-    function shareData() {
-        const mgrs = document.getElementById('rMgrs').innerText;
-        const ground = document.getElementById('rGround').innerText;
-        const height = document.getElementById('rHeight').innerText;
-        const note = mode === 'dist' ? `MAALI: ${mgrs}` : `HAVAINTO: ${mgrs}`;
-        
-        const shareText = `${note}\nETÄISYYS: ${ground}\nKORKEUS: ${height}\nTJ-Laskuri`;
-
-        if (navigator.share) {
-            navigator.share({ title: 'Havainto', text: shareText }).catch(console.error);
-        } else {
-            navigator.clipboard.writeText(shareText).then(() => alert("Kopioitu leikepöydälle!"));
-        }
-    }
-
-    // --- COORD & MGRS LOGIC ---
+    function resetRes() {document.getElementById('rSlant').innerText="---"; document.getElementById('rGround').innerText="---"; document.getElementById('rSize').innerText="---"; document.getElementById('rMgrs').innerText="---";}
+    function shareData() {const mgrs = document.getElementById('rMgrs').innerText; const ground = document.getElementById('rGround').innerText; const height = document.getElementById('rHeight').innerText; const note = mode === 'dist' ? `MAALI: ${mgrs}` : `HAVAINTO: ${mgrs}`; const shareText = `${note}\nETÄISYYS: ${ground}\nKORKEUS: ${height}\nTJ-Laskuri`; if (navigator.share) {navigator.share({ title: 'Havainto', text: shareText }).catch(console.error);} else {navigator.clipboard.writeText(shareText).then(() => alert("Kopioitu leikepöydälle!"));}}
     function calcCoords(dist) {
-        const latD=parseFloat(document.getElementById('latD').value), latM=parseFloat(document.getElementById('latM').value)||0, latS=parseFloat(document.getElementById('latS').value)||0;
-        const lonD=parseFloat(document.getElementById('lonD').value), lonM=parseFloat(document.getElementById('lonM').value)||0, lonS=parseFloat(document.getElementById('lonS').value)||0;
-        const azVal=parseFloat(document.getElementById('azimuth').value);
-
+        const latD=parseFloat(document.getElementById('latD').value), latM=parseFloat(document.getElementById('latM').value)||0, latS=parseFloat(document.getElementById('latS').value)||0; const lonD=parseFloat(document.getElementById('lonD').value), lonM=parseFloat(document.getElementById('lonM').value)||0, lonS=parseFloat(document.getElementById('lonS').value)||0; const azVal=parseFloat(document.getElementById('azimuth').value);
         if(!azVal) { document.getElementById('rShift').innerText="---"; document.getElementById('rMgrs').innerText="---"; return; }
-
-        const azRad = getRad(azVal, document.getElementById('azUnit').value);
-        const dN = dist * Math.cos(azRad), dE = dist * Math.sin(azRad);
+        const azRad = getRad(azVal, document.getElementById('azUnit').value); const dN = dist * Math.cos(azRad), dE = dist * Math.sin(azRad);
         document.getElementById('rShift').innerText = `N: ${dN>0?'+':''}${dN.toFixed(0)}m  E: ${dE>0?'+':''}${dE.toFixed(0)}m`;
-
         if(!latD || !lonD) return;
-        const lat1 = toRad(latD + latM/60 + latS/3600);
-        const lon1 = toRad(lonD + lonM/60 + lonS/3600);
-        const R = 6371000;
-        const lat2 = Math.asin(Math.sin(lat1)*Math.cos(dist/R) + Math.cos(lat1)*Math.sin(dist/R)*Math.cos(azRad));
-        const lon2 = lon1 + Math.atan2(Math.sin(azRad)*Math.sin(dist/R)*Math.cos(lat1), Math.cos(dist/R)-Math.sin(lat1)*Math.sin(lat2));
-        
-        // Convert to MGRS
-        try {
-            const mgrs = forward(toDeg(lat2), toDeg(lon2));
-            document.getElementById('rMgrs').innerText = mgrs;
-        } catch(e) {
-            document.getElementById('rMgrs').innerText = "Err";
-        }
+        const lat1 = toRad(latD + latM/60 + latS/3600); const lon1 = toRad(lonD + lonM/60 + lonS/3600); const R = 6371000;
+        const lat2 = Math.asin(Math.sin(lat1)*Math.cos(dist/R) + Math.cos(lat1)*Math.sin(dist/R)*Math.cos(azRad)); const lon2 = lon1 + Math.atan2(Math.sin(azRad)*Math.sin(dist/R)*Math.cos(lat1), Math.cos(dist/R)-Math.sin(lat1)*Math.sin(lat2));
+        try {document.getElementById('rMgrs').innerText = forward(toDeg(lat2), toDeg(lon2));} catch(e) {document.getElementById('rMgrs').innerText = "Err";}
     }
-
-    // --- LIGHTWEIGHT MGRS CONVERTER (Embedded) ---
-    // Based on standard UTM/MGRS math logic
-    function forward(lat, lon) {
-        if (lat < -80 || lat > 84) return "Polar region";
-        const ZONE = Math.floor((lon + 180) / 6) + 1;
-        const N0 = lat >= 0 ? 0 : 10000000;
-        const k0 = 0.9996;
-        const a = 6378137.0; // WGS84
-        const f = 1 / 298.257223563;
-        const b = a * (1 - f);
-        const e = Math.sqrt(1 - (b * b) / (a * a));
-        const e1sq = e * e / (1 - e * e);
-        
-        const latRad = toRad(lat);
-        const lonRad = toRad(lon);
-        const lonOrigin = toRad((ZONE - 1) * 6 - 180 + 3);
-
-        const N = a / Math.sqrt(1 - Math.pow(e * Math.sin(latRad), 2));
-        const T = Math.pow(Math.tan(latRad), 2);
-        const C = e1sq * Math.pow(Math.cos(latRad), 2);
-        const A = (lonRad - lonOrigin) * Math.cos(latRad);
-        const M = a * ((1 - Math.pow(e, 2) / 4 - 3 * Math.pow(e, 4) / 64 - 5 * Math.pow(e, 6) / 256) * latRad - (3 * Math.pow(e, 2) / 8 + 3 * Math.pow(e, 4) / 32 + 45 * Math.pow(e, 6) / 1024) * Math.sin(2 * latRad) + (15 * Math.pow(e, 4) / 256 + 45 * Math.pow(e, 6) / 1024) * Math.sin(4 * latRad) - (35 * Math.pow(e, 6) / 3072) * Math.sin(6 * latRad));
-
-        const easting = k0 * N * (A + (1 - T + C) * Math.pow(A, 3) / 6 + (5 - 18 * T + T * T + 72 * C - 58 * e1sq) * Math.pow(A, 5) / 120) + 500000.0;
-        const northing = k0 * (M + N * Math.tan(latRad) * (A * A / 2 + (5 - T + 9 * C + 4 * C * C) * Math.pow(A, 4) / 24 + (61 - 58 * T + T * T + 600 * C - 330 * e1sq) * Math.pow(A, 6) / 720)) + N0;
-
-        return getMgrsString(ZONE, lat, easting, northing);
-    }
-
-    function getMgrsString(zone, lat, e, n) {
-        // GZD Letter
-        const letters = "CDEFGHJKLMNPQRSTUVWXX"; 
-        const latIndex = Math.floor((lat + 80) / 8);
-        let gzd = letters[latIndex];
-        if(lat > 84) gzd = 'X'; 
-
-        // 100km Square
-        const set = zone % 6;
-        const digraphs = "ABCDEFGHJKLMNPQRSTUVWXYZ";
-        // Calculate col/row for 100k square
-        const e100k = Math.floor(e / 100000);
-        const n100k = Math.floor(n / 100000) % 20;
-        
-        // Simplified Logic for standard zones (skipping complex band exceptions for brevity in single-file)
-        // This covers standard operating areas well.
-        // Col:
-        let colOffset = (set - 1) * 8; 
-        let colLet = digraphs[(colOffset + e100k - 1) % 24]; // Approx logic
-        // Row:
-        let rowOffset = (set % 2 === 0) ? 5 : 0; 
-        let rowLet = digraphs[(rowOffset + n100k) % 20];
-
-        // Format 5 digit precision
-        const eStr = Math.floor(e % 100000).toString().padStart(5, '0');
-        const nStr = Math.floor(n % 100000).toString().padStart(5, '0');
-
-        // Note: The letter logic above is a simplified approximation for common zones.
-        // For mission critical precision across all zone boundaries, external library is safer,
-        // but this works for local calculations.
-        
-        // Let's use a simpler known standard array for 100km letters to be safer:
-        const mgrs = `${zone}${gzd} ${get100kID(zone, e, n)} ${eStr} ${nStr}`;
-        return mgrs;
-    }
-
-    function get100kID(zone, easting, northing) {
-       // Correct 100k letter math
-       let set = zone % 6; if(set===0) set=6;
-       const colBase = "ABCDEFGHJKLMNPQRSTUVWXYZ";
-       const rowBase = "ABCDEFGHJKLMNPQRSTUV";
-       
-       // Col
-       let colBlock = Math.floor(easting / 100000);
-       // Handle edge cases
-       if(colBlock < 1 || colBlock > 8) return "XX";
-       
-       let colIdx = (set - 1) * 8 + colBlock - 1;
-       // Wrap letters excluding I and O
-       const colL = getL(colBase, colIdx);
-
-       // Row
-       let rowBlock = Math.floor(northing / 100000);
-       let rowOffset = (set % 2 === 0) ? 5 : 0;
-       let rowIdx = (rowOffset + rowBlock) % 20;
-       const rowL = rowBase[rowIdx];
-       
-       return colL + rowL;
-    }
-    
-    function getL(base, idx) {
-        // Skip I and O manually logic
-        const valid = "ABCDEFGHJKLMNPQRSTUVWXYZ";
-        return valid[idx % 24];
-    }
-
-    // --- SENSORS ---
-    let wId=null;
-    function toggleGPS(){
-        const b=document.getElementById('btnGps');
-        if(wId){navigator.geolocation.clearWatch(wId);wId=null;b.classList.remove('active');}
-        else{b.classList.add('active');wId=navigator.geolocation.watchPosition(p=>{const l=p.coords.latitude,n=p.coords.longitude;const lp=splitD(l),lo=splitD(n);document.getElementById('latD').value=lp.d;document.getElementById('latM').value=lp.m;document.getElementById('latS').value=lp.s;document.getElementById('lonD').value=lo.d;document.getElementById('lonM').value=lo.m;document.getElementById('lonS').value=lo.s;calc();},e=>{alert('GPS Err');toggleGPS();},{enableHighAccuracy:true});}
-    }
+    function forward(lat, lon) {if (lat < -80 || lat > 84) return "Polar region"; const ZONE = Math.floor((lon + 180) / 6) + 1; const N0 = lat >= 0 ? 0 : 10000000; const k0 = 0.9996; const a = 6378137.0; const f = 1 / 298.257223563; const b = a * (1 - f); const e = Math.sqrt(1 - (b * b) / (a * a)); const e1sq = e * e / (1 - e * e); const latRad = toRad(lat); const lonRad = toRad(lon); const lonOrigin = toRad((ZONE - 1) * 6 - 180 + 3); const N = a / Math.sqrt(1 - Math.pow(e * Math.sin(latRad), 2)); const T = Math.pow(Math.tan(latRad), 2); const C = e1sq * Math.pow(Math.cos(latRad), 2); const A = (lonRad - lonOrigin) * Math.cos(latRad); const M = a * ((1 - Math.pow(e, 2) / 4 - 3 * Math.pow(e, 4) / 64 - 5 * Math.pow(e, 6) / 256) * latRad - (3 * Math.pow(e, 2) / 8 + 3 * Math.pow(e, 4) / 32 + 45 * Math.pow(e, 6) / 1024) * Math.sin(2 * latRad) + (15 * Math.pow(e, 4) / 256 + 45 * Math.pow(e, 6) / 1024) * Math.sin(4 * latRad) - (35 * Math.pow(e, 6) / 3072) * Math.sin(6 * latRad)); const easting = k0 * N * (A + (1 - T + C) * Math.pow(A, 3) / 6 + (5 - 18 * T + T * T + 72 * C - 58 * e1sq) * Math.pow(A, 5) / 120) + 500000.0; const northing = k0 * (M + N * Math.tan(latRad) * (A * A / 2 + (5 - T + 9 * C + 4 * C * C) * Math.pow(A, 4) / 24 + (61 - 58 * T + T * T + 600 * C - 330 * e1sq) * Math.pow(A, 6) / 720)) + N0; return getMgrsString(ZONE, lat, easting, northing);}
+    function getMgrsString(zone, lat, e, n) {const letters = "CDEFGHJKLMNPQRSTUVWXX"; const latIndex = Math.floor((lat + 80) / 8); let gzd = letters[latIndex]; if(lat > 84) gzd = 'X'; const eStr = Math.floor(e % 100000).toString().padStart(5, '0'); const nStr = Math.floor(n % 100000).toString().padStart(5, '0'); const mgrs = `${zone}${gzd} ${get100kID(zone, e, n)} ${eStr} ${nStr}`; return mgrs;}
+    function get100kID(zone, easting, northing) {let set = zone % 6; if(set===0) set=6; const colBase = "ABCDEFGHJKLMNPQRSTUVWXYZ"; const rowBase = "ABCDEFGHJKLMNPQRSTUV"; let colBlock = Math.floor(easting / 100000); if(colBlock < 1 || colBlock > 8) return "XX"; let colIdx = (set - 1) * 8 + colBlock - 1; const colL = colBase[colIdx % 24]; let rowBlock = Math.floor(northing / 100000); let rowOffset = (set % 2 === 0) ? 5 : 0; let rowIdx = (rowOffset + rowBlock) % 20; const rowL = rowBase[rowIdx]; return colL + rowL;}
+    let wId=null; function toggleGPS(){const b=document.getElementById('btnGps'); if(wId){navigator.geolocation.clearWatch(wId);wId=null;b.classList.remove('active');} else{b.classList.add('active');wId=navigator.geolocation.watchPosition(p=>{const l=p.coords.latitude,n=p.coords.longitude;const lp=splitD(l),lo=splitD(n);document.getElementById('latD').value=lp.d;document.getElementById('latM').value=lp.m;document.getElementById('latS').value=lp.s;document.getElementById('lonD').value=lo.d;document.getElementById('lonM').value=lo.m;document.getElementById('lonS').value=lo.s;calc();},e=>{alert('GPS Err');toggleGPS();},{enableHighAccuracy:true});}}
     function splitD(d){const a=Math.abs(d),x=Math.floor(a),m=Math.floor((a-x)*60),s=((a-x-m/60)*3600).toFixed(1);return{d:x*(d<0?-1:1),m:m,s:s};}
-    let cAct=false;
-    function toggleCompass(){const b=document.getElementById('btnCompass');if(cAct){window.removeEventListener('deviceorientation',hOr);cAct=false;b.classList.remove('active');}else{if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){DeviceOrientationEvent.requestPermission().then(r=>{if(r==='granted')sC(b);});}else sC(b);}}
+    let cAct=false; function toggleCompass(){const b=document.getElementById('btnCompass');if(cAct){window.removeEventListener('deviceorientation',hOr);cAct=false;b.classList.remove('active');}else{if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){DeviceOrientationEvent.requestPermission().then(r=>{if(r==='granted')sC(b);});}else sC(b);}}
     function sC(b){window.addEventListener('deviceorientation',hOr);cAct=true;b.classList.add('active');}
     function hOr(e){let h=e.webkitCompassHeading||(e.alpha?360-e.alpha:0);if(h){if(h<0)h+=360;if(h>=360)h-=360;const u=document.getElementById('azUnit').value;let v=h;if(u==='mil')v=h*(6400/360);if(u==='piiru')v=h*(6000/360);document.getElementById('azimuth').value=Math.round(v);calc();}}
-    
-    // UTILS
     function updateJohnson(px){const j1=document.getElementById('j1'),j2=document.getElementById('j2'),j3=document.getElementById('j3'),t=document.getElementById('jTxt');j1.className=j2.className=j3.className="step";if(px<2){t.innerText="---";return;}j1.classList.add("active","l1");t.innerText="HAVAITSEMINEN";t.style.color="#c0392b";if(px>=8){j2.classList.add("active","l2");t.innerText="LUOKITTELU";t.style.color="#f39c12";}if(px>=13){j3.classList.add("active","l3");t.innerText="TUNNISTUS";t.style.color="#27ae60";}}
     function loadProfile(){const p=profs[document.getElementById('profileSelector').value];if(p){document.getElementById('fov').value=p.f;document.getElementById('res').value=p.r;document.getElementById('fovUnit').value=p.u;calc();}}
     let profs=JSON.parse(localStorage.getItem('tj_profs_v2')||'{}');
