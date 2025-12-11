@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TJ-Laskuri Pro v8</title>
+    <title>TJ-Laskuri Pro v9</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1e1e1e">
@@ -16,7 +16,8 @@
             --bg: #121212; --panel: #1e1e1e; --input-bg: #2d2d2d;
             --text-main: #e0e0e0; --text-muted: #888; --border: #333;
             --accent: #2980b9; --success: #27ae60; --warning: #f39c12; --danger: #c0392b;
-            --active-sensor: #c0392b; /* Punainen kun sensori on päällä */
+            --active-sensor: #c0392b;
+            --tab-active: #2c3e50;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -24,43 +25,48 @@
             display: flex; justify-content: center;
         }
         .container {
-            background: var(--panel); padding: 15px; border-radius: 8px; width: 100%; max-width: 500px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.6); padding-bottom: 30px;
+            background: var(--panel); padding: 0; border-radius: 8px; width: 100%; max-width: 500px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6); overflow: hidden; padding-bottom: 20px;
         }
-        h2 { text-align: center; margin: 5px 0 15px 0; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+        
+        /* TABS */
+        .tab-bar { display: flex; background: #111; border-bottom: 1px solid var(--border); }
+        .tab {
+            flex: 1; padding: 15px; text-align: center; cursor: pointer;
+            background: #151515; color: #888; font-weight: bold; text-transform: uppercase; font-size: 0.85rem;
+            border: none; border-bottom: 3px solid transparent; transition: 0.2s;
+        }
+        .tab.active { background: var(--panel); color: var(--accent); border-bottom-color: var(--accent); }
 
-        /* Input Styles */
+        /* CONTENT PADDING */
+        .content-area { padding: 15px; }
+
+        /* COMMON STYLES */
+        h2 { text-align: center; margin: 5px 0 15px 0; font-size: 1.1rem; color: var(--text-muted); }
         label { display: block; margin-top: 8px; margin-bottom: 2px; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
         input, select {
             width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border); color: #fff;
             border-radius: 4px; box-sizing: border-box; font-size: 16px;
         }
         input:focus, select:focus { border-color: var(--accent); outline: none; }
-        
-        /* Layout */
         .row { display: flex; gap: 8px; align-items: flex-end; }
         .col { flex: 1; }
         .coord-group { display: flex; gap: 4px; }
         .coord-group input { text-align: center; padding: 10px 2px; }
 
-        /* Buttons */
+        /* BUTTONS */
         .btn-group { display: flex; gap: 5px; margin-bottom: 15px; background: #252525; padding: 5px; border-radius: 6px; }
         .btn { padding: 10px; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; font-size: 0.8rem;}
         .btn-save { background: var(--success); flex: 1; } 
         .btn-del { background: var(--danger); width: 40px; }
-
-        /* SENSOR BUTTONS */
         .sensor-btn {
             background: #333; color: #ccc; border: 1px solid #444; width: 100%; margin-top: 5px;
             padding: 8px; border-radius: 4px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;
         }
-        .sensor-btn.active {
-            background: var(--active-sensor); color: white; border-color: var(--active-sensor);
-            animation: pulse 2s infinite;
-        }
+        .sensor-btn.active { background: var(--active-sensor); color: white; border-color: var(--active-sensor); animation: pulse 2s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
-        
-        /* Result Box */
+
+        /* RESULT BOX */
         .result-box {
             background: #252d3a; border-radius: 6px; padding: 15px; margin-top: 20px; border: 1px solid #3a4b61;
         }
@@ -69,151 +75,285 @@
         .res-val { font-weight: bold; font-family: monospace; font-size: 1.1rem; color: #fff; }
         .res-highlight { color: var(--success); font-size: 1.4rem; }
         
-        /* Johnson Meter */
+        /* JOHNSON METER */
         .meter { display: flex; height: 6px; gap: 2px; margin-top: 8px; }
         .step { flex: 1; background: #333; border-radius: 2px; }
         .active.l1 { background: var(--danger); } .active.l2 { background: var(--warning); } .active.l3 { background: var(--success); }
         .j-text { text-align: center; font-size: 0.75rem; margin-top: 4px; font-weight: bold; color: #666; }
 
-        /* Modal */
-        .info-btn { position: absolute; top: 15px; right: 15px; background: #333; color: #fff; border:none; width:25px; height:25px; border-radius:50%; font-weight:bold; }
+        /* MODALS */
+        .info-btn { position: absolute; top: 10px; right: 10px; background: #333; color: #fff; border:none; width:25px; height:25px; border-radius:50%; font-weight:bold; z-index: 10;}
         .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); }
-        .modal-content { background: var(--panel); margin: 15% auto; padding: 20px; width: 85%; border-radius: 8px; border: 1px solid #444; }
+        .modal-content { background: var(--panel); margin: 10% auto; padding: 20px; width: 90%; max-width: 450px; border-radius: 8px; border: 1px solid #444; max-height: 80vh; overflow-y: auto; }
+        
+        /* TARGET MANAGER LIST */
+        .target-list { list-style: none; padding: 0; margin: 10px 0; }
+        .target-item { display: flex; justify-content: space-between; background: #2d2d2d; padding: 10px; margin-bottom: 5px; border-radius: 4px; align-items: center;}
+        .target-item button { background: var(--danger); border: none; color: white; width: 25px; height: 25px; border-radius: 4px; cursor: pointer; }
+        
+        /* Utility classes for Tabs */
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <button class="info-btn" onclick="document.getElementById('infoModal').style.display='block'">i</button>
-    <h2>TJ-Laskuri Pro</h2>
-
-    <div class="btn-group">
-        <select id="profileSelector" onchange="loadProfile()" style="flex: 3; background: transparent; border: none;">
-            <option value="">-- Valitse Profiili --</option>
-        </select>
-        <button class="btn btn-save" onclick="saveProfile()">TAL</button>
-        <button class="btn btn-del" onclick="deleteProfile()">X</button>
+    <button class="info-btn" onclick="openInfo()">i</button>
+    
+    <div class="tab-bar">
+        <button class="tab active" id="tabDist" onclick="setTab('dist')">Laske Etäisyys</button>
+        <button class="tab" id="tabSize" onclick="setTab('size')">Laske Koko</button>
     </div>
 
-    <div style="margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 15px;">
-        <label>Oma Sijainti (WGS84)</label>
-        <div class="row" style="margin-bottom: 5px;">
-            <div class="coord-group col">
-                <input type="number" id="latD" placeholder="Lat °" oninput="calc()">
-                <input type="number" id="latM" placeholder="'" oninput="calc()">
-                <input type="number" id="latS" placeholder='"' oninput="calc()">
-            </div>
-        </div>
-        <div class="row">
-            <div class="coord-group col">
-                <input type="number" id="lonD" placeholder="Lon °" oninput="calc()">
-                <input type="number" id="lonM" placeholder="'" oninput="calc()">
-                <input type="number" id="lonS" placeholder='"' oninput="calc()">
-            </div>
-        </div>
-        <button id="btnGps" class="sensor-btn" onclick="toggleGPS()">
-            <span>📍</span> Hae GPS Sijainti
-        </button>
-
-        <div class="row" style="margin-top:15px;">
-            <div class="col" style="flex: 2;">
-                <label>Tähystyssuunta</label>
-                <input type="number" id="azimuth" placeholder="Suunta" oninput="calc()">
-            </div>
-            <div class="col" style="flex: 1;">
-                <label>Yksikkö</label>
-                <select id="azUnit" onchange="calc()">
-                    <option value="mil">Mil</option>
-                    <option value="deg">Deg</option>
-                    <option value="piiru">PV</option>
-                </select>
-            </div>
-        </div>
-        <button id="btnCompass" class="sensor-btn" onclick="toggleCompass()">
-            <span>🧭</span> Hae Kompassi
-        </button>
-    </div>
-
-    <div class="row">
-        <div class="col" style="flex:2;">
-            <label>Kameran FOV</label>
-            <input type="number" id="fov" placeholder="FOV" oninput="calc()">
-        </div>
-        <div class="col" style="flex:1.5;">
-            <label>Yksikkö</label>
-            <select id="fovUnit" onchange="calc()">
-                <option value="deg">°</option>
-                <option value="mil">Mil</option>
-                <option value="piiru">PV</option>
-                <option value="mrad">Mrad</option>
-            </select>
-        </div>
-        <div class="col" style="flex:1.5;">
-            <label>Kuva px</label>
-            <input type="number" id="res" value="1920" oninput="calc()">
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col" style="flex: 2;">
-            <label>Maali (m)</label>
-            <div class="coord-group">
-                <select id="pre" onchange="applyPre()" style="width: 30%; padding: 5px;">
-                    <option value="" disabled selected>▾</option>
-                    <option value="0.5">0.5</option>
-                    <option value="2.3">2.3</option>
-                    <option value="20">20</option>
-                </select>
-                <input type="number" id="tReal" placeholder="m" oninput="calc()">
-            </div>
-        </div>
-        <div class="col" style="flex: 1.5;">
-            <label>Maali px</label>
-            <input type="number" id="tPx" placeholder="px" oninput="calc()">
-        </div>
-        <div class="col" style="flex: 1.5;">
-            <label>Koro (°)</label>
-            <input type="number" id="elev" placeholder="±deg" oninput="calc()">
-        </div>
-    </div>
-
-    <div class="result-box">
-        <div class="res-row"><span class="res-label">Viistoetäisyys</span><span class="res-val" id="rSlant">---</span></div>
-        <div class="res-row"><span class="res-label">Maastoetäisyys</span><span class="res-val res-highlight" id="rGround">---</span></div>
-        <div class="res-row"><span class="res-label">Korkeusero</span><span class="res-val" id="rHeight">---</span></div>
+    <div class="content-area">
         
-        <div style="margin-top:12px; border-top:1px solid #444; padding-top:8px;">
-            <div class="res-label" style="text-align:center; margin-bottom:4px;">MAALIN WGS84</div>
-            <div id="rCoords" style="color:#5dade2; font-family:monospace; font-size:1rem; text-align:center;">---</div>
-            
-            <div class="res-label" style="text-align:center; margin-top:8px; margin-bottom:4px;">GRID SIIRTYMÄ (MGRS)</div>
-            <div id="rShift" style="color:#e0e0e0; font-family:monospace; font-size:1rem; text-align:center;">N: --- E: ---</div>
+        <div class="btn-group">
+            <select id="profileSelector" onchange="loadProfile()" style="flex: 3; background: transparent; border: none;">
+                <option value="">-- Valitse Profiili --</option>
+            </select>
+            <button class="btn btn-save" onclick="saveProfile()">TAL</button>
+            <button class="btn btn-del" onclick="deleteProfile()">X</button>
         </div>
 
-        <div class="meter"><div id="j1" class="step"></div><div id="j2" class="step"></div><div id="j3" class="step"></div></div>
-        <div id="jTxt" class="j-text">---</div>
+        <div style="margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 15px;">
+            <label>Oma Sijainti (WGS84)</label>
+            <div class="row" style="margin-bottom: 5px;">
+                <div class="coord-group col">
+                    <input type="number" id="latD" placeholder="Lat °" oninput="calc()">
+                    <input type="number" id="latM" placeholder="'" oninput="calc()">
+                    <input type="number" id="latS" placeholder='"' oninput="calc()">
+                </div>
+            </div>
+            <div class="row">
+                <div class="coord-group col">
+                    <input type="number" id="lonD" placeholder="Lon °" oninput="calc()">
+                    <input type="number" id="lonM" placeholder="'" oninput="calc()">
+                    <input type="number" id="lonS" placeholder='"' oninput="calc()">
+                </div>
+            </div>
+            <button id="btnGps" class="sensor-btn" onclick="toggleGPS()"><span>📍</span> GPS</button>
+
+            <div class="row" style="margin-top:15px;">
+                <div class="col" style="flex: 2;">
+                    <label>Tähystyssuunta</label>
+                    <input type="number" id="azimuth" placeholder="Suunta" oninput="calc()">
+                </div>
+                <div class="col" style="flex: 1;">
+                    <label>Yksikkö</label>
+                    <select id="azUnit" onchange="calc()">
+                        <option value="mil">Mil</option>
+                        <option value="deg">Deg</option>
+                        <option value="piiru">PV</option>
+                    </select>
+                </div>
+            </div>
+            <button id="btnCompass" class="sensor-btn" onclick="toggleCompass()"><span>🧭</span> Kompassi</button>
+        </div>
+
+        <div class="row">
+            <div class="col" style="flex:2;">
+                <label>Kameran FOV</label>
+                <input type="number" id="fov" placeholder="FOV" oninput="calc()">
+            </div>
+            <div class="col" style="flex:1.5;">
+                <label>Yksikkö</label>
+                <select id="fovUnit" onchange="calc()">
+                    <option value="deg">°</option>
+                    <option value="mil">Mil</option>
+                    <option value="piiru">PV</option>
+                    <option value="mrad">Mrad</option>
+                </select>
+            </div>
+            <div class="col" style="flex:1.5;">
+                <label>Kuva px</label>
+                <input type="number" id="res" value="1920" oninput="calc()">
+            </div>
+        </div>
+
+        <div id="viewDist">
+            <div class="row">
+                <div class="col" style="flex: 2.5;">
+                    <label>Valitse Maali (m)</label>
+                    <div style="display:flex; gap:5px;">
+                        <select id="targetSelect" onchange="applyTarget()" style="flex:1;">
+                            <option value="" disabled selected>▾</option>
+                        </select>
+                        <button onclick="openTargetManager()" style="background:#333; border:1px solid #444; color:#fff; border-radius:4px;">⚙</button>
+                    </div>
+                </div>
+                <div class="col" style="flex: 1.5;">
+                     <label>Koko (m)</label>
+                     <input type="number" id="tReal" placeholder="m" oninput="calc()">
+                </div>
+            </div>
+        </div>
+
+        <div id="viewSize" class="hidden">
+            <div class="row">
+                <div class="col">
+                    <label>Tunnettu Etäisyys (m)</label>
+                    <input type="number" id="knownDist" placeholder="Etäisyys" oninput="calc()">
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col" style="flex: 1.5;">
+                <label>Maali px</label>
+                <input type="number" id="tPx" placeholder="px" oninput="calc()">
+            </div>
+            <div class="col" style="flex: 1.5;">
+                <label>Koro (°)</label>
+                <input type="number" id="elev" placeholder="±deg" oninput="calc()">
+            </div>
+        </div>
+
+        <div class="result-box">
+            <div id="resGroupDist">
+                <div class="res-row"><span class="res-label">Viistoetäisyys</span><span class="res-val" id="rSlant">---</span></div>
+                <div class="res-row"><span class="res-label">Maastoetäisyys</span><span class="res-val res-highlight" id="rGround">---</span></div>
+            </div>
+            
+            <div id="resGroupSize" class="hidden">
+                <div class="res-row"><span class="res-label">Maalin leveys</span><span class="res-val res-highlight" id="rSize">---</span></div>
+            </div>
+
+            <div class="res-row"><span class="res-label">Korkeusero</span><span class="res-val" id="rHeight">---</span></div>
+            
+            <div style="margin-top:12px; border-top:1px solid #444; padding-top:8px;">
+                <div class="res-label" style="text-align:center; margin-bottom:4px;">MAALIN WGS84</div>
+                <div id="rCoords" style="color:#5dade2; font-family:monospace; font-size:1rem; text-align:center;">---</div>
+                <div class="res-label" style="text-align:center; margin-top:8px;">GRID SIIRTYMÄ</div>
+                <div id="rShift" style="color:#e0e0e0; font-family:monospace; font-size:1rem; text-align:center;">---</div>
+            </div>
+
+            <div class="meter"><div id="j1" class="step"></div><div id="j2" class="step"></div><div id="j3" class="step"></div></div>
+            <div id="jTxt" class="j-text">---</div>
+        </div>
+    </div>
+</div>
+
+<div id="targetModal" class="modal">
+    <div class="modal-content">
+        <h3 style="margin-top:0;">Maalikirjasto</h3>
+        <ul id="targetList" class="target-list"></ul>
+        
+        <label>Lisää uusi maali</label>
+        <div class="row">
+            <input type="text" id="newTgtName" placeholder="Nimi (esim. T-72)">
+            <input type="number" id="newTgtSize" placeholder="Lev. m" style="width:80px;">
+        </div>
+        <button class="sensor-btn" onclick="addTarget()" style="margin-top:10px; background:var(--success); color:white;">+ Lisää</button>
+        <button class="sensor-btn" onclick="document.getElementById('targetModal').style.display='none'" style="margin-top:20px;">Sulje</button>
     </div>
 </div>
 
 <div id="infoModal" class="modal" onclick="this.style.display='none'">
     <div class="modal-content">
         <h3>Ohjeet</h3>
-        <p><strong>GPS & Kompassi:</strong> Vaatii HTTPS-yhteyden. Paina nappeja aktivoidaksesi.</p>
-        <p><strong>iPhone Käyttäjät:</strong> Kompassi vaatii luvan (Allow) ensimmäisellä kerralla.</p>
-        <p><strong>WGS84:</strong> Koordinaatit syötetään muodossa Asteet, Minuutit, Sekunnit.</p>
-        <p style="text-align:right; margin-top:20px; color:#2980b9;">Sulje</p>
+        <p><strong>Laske Etäisyys:</strong> Käytä kun tiedät maalin koon (valitse kirjastosta ⚙).</p>
+        <p><strong>Laske Koko:</strong> Käytä kun tiedät etäisyyden ja haluat arvioida kohteen fyysisen koon.</p>
+        <p><strong>GPS/Kompassi:</strong> Vaatii HTTPS-yhteyden.</p>
     </div>
 </div>
 
 <script>
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js').catch(console.error);
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(console.error);
+
+    // --- STATE ---
+    let mode = 'dist'; // 'dist' or 'size'
+    
+    // --- TARGET LIBRARY LOGIC ---
+    const defaultTargets = [
+        {n: "Mies (hartiat)", s: 0.5},
+        {n: "Mies (pituus)", s: 1.8},
+        {n: "Henkilöauto", s: 1.8},
+        {n: "BTR / Pas", s: 2.9},
+        {n: "Kuorma-auto", s: 2.5},
+        {n: "Lennokki", s: 2.5},
+        {n: "Hävittäjä", s: 15.0},
+        {n: "Matkustajakone", s: 60.0}
+    ];
+
+    let targets = JSON.parse(localStorage.getItem('tj_targets') || JSON.stringify(defaultTargets));
+
+    function initTargets() {
+        populateTargetSelect();
+        renderTargetList();
     }
 
-    // --- MATH & UTILS ---
+    function populateTargetSelect() {
+        const sel = document.getElementById('targetSelect');
+        sel.innerHTML = '<option value="" disabled selected>▾ Valitse</option>';
+        targets.forEach((t, idx) => {
+            let opt = document.createElement('option');
+            opt.value = t.s;
+            opt.text = `${t.n} (${t.s}m)`;
+            sel.add(opt);
+        });
+    }
+
+    function renderTargetList() {
+        const list = document.getElementById('targetList');
+        list.innerHTML = '';
+        targets.forEach((t, idx) => {
+            let li = document.createElement('li');
+            li.className = 'target-item';
+            li.innerHTML = `<span>${t.n} (${t.s}m)</span> <button onclick="deleteTarget(${idx})">X</button>`;
+            list.appendChild(li);
+        });
+    }
+
+    function addTarget() {
+        const n = document.getElementById('newTgtName').value;
+        const s = parseFloat(document.getElementById('newTgtSize').value);
+        if(n && s) {
+            targets.push({n:n, s:s});
+            localStorage.setItem('tj_targets', JSON.stringify(targets));
+            initTargets();
+            document.getElementById('newTgtName').value = '';
+            document.getElementById('newTgtSize').value = '';
+        }
+    }
+
+    function deleteTarget(idx) {
+        if(confirm('Poista maali?')) {
+            targets.splice(idx, 1);
+            localStorage.setItem('tj_targets', JSON.stringify(targets));
+            initTargets();
+        }
+    }
+
+    function applyTarget() {
+        document.getElementById('tReal').value = document.getElementById('targetSelect').value;
+        calc();
+    }
+
+    function openTargetManager() {
+        document.getElementById('targetModal').style.display = 'block';
+    }
+
+    // --- TABS LOGIC ---
+    function setTab(m) {
+        mode = m;
+        // Tabs UI
+        document.getElementById('tabDist').className = m==='dist'?'tab active':'tab';
+        document.getElementById('tabSize').className = m==='size'?'tab active':'tab';
+        
+        // Views
+        document.getElementById('viewDist').className = m==='dist'?'':'hidden';
+        document.getElementById('viewSize').className = m==='size'?'':'hidden';
+        
+        // Results
+        document.getElementById('resGroupDist').className = m==='dist'?'':'hidden';
+        document.getElementById('resGroupSize').className = m==='size'?'':'hidden';
+        
+        calc();
+    }
+
+    // --- MATH & SENSORS ---
     const toRad = d => d * Math.PI / 180;
     const toDeg = r => r * 180 / Math.PI;
-
     function getRad(val, unit) {
         if (!val) return 0;
         if (unit === 'deg') return toRad(val);
@@ -222,207 +362,106 @@
         if (unit === 'mrad') return val / 1000;
         return 0;
     }
-
-    function ddToDmsSplit(deg) {
-        const abs = Math.abs(deg);
-        const d = Math.floor(abs);
-        const m = Math.floor((abs - d) * 60);
-        const s = ((abs - d - m/60) * 3600).toFixed(1);
-        return { d: d * (deg < 0 ? -1 : 1), m: m, s: s };
+    
+    // DD to DMS string
+    function dms(deg, isLat) {
+        if(!deg && deg!==0) return "---";
+        const d = Math.floor(Math.abs(deg));
+        const m = Math.floor((Math.abs(deg)-d)*60);
+        const s = ((Math.abs(deg)-d-m/60)*3600).toFixed(1);
+        const dir = isLat?(deg>=0?'N':'S'):(deg>=0?'E':'W');
+        return `${d}°${m}'${s}"${dir}`;
     }
 
-    function ddToDmsStr(deg, isLat) {
-        const p = ddToDmsSplit(deg);
-        const dir = isLat ? (deg >= 0 ? 'N' : 'S') : (deg >= 0 ? 'E' : 'W');
-        return `${Math.abs(p.d)}°${p.m}'${p.s}"${dir}`;
-    }
-
-    // --- SENSOR LOGIC ---
-    let watchId = null;
-    let compassActive = false;
-
-    // 1. GPS TOGGLE
-    function toggleGPS() {
-        const btn = document.getElementById('btnGps');
-        
-        if (watchId) {
-            // STOP
-            navigator.geolocation.clearWatch(watchId);
-            watchId = null;
-            btn.classList.remove('active');
-            btn.innerHTML = '<span>📍</span> Hae GPS Sijainti';
-        } else {
-            // START
-            if (!navigator.geolocation) { alert("Selaimesi ei tue GPS:ää"); return; }
-            btn.classList.add('active');
-            btn.innerHTML = '<span>📍</span> Päivitetään...';
-            
-            watchId = navigator.geolocation.watchPosition((pos) => {
-                const lat = pos.coords.latitude;
-                const lon = pos.coords.longitude;
-                
-                // Täytä kentät (Lat)
-                const latP = ddToDmsSplit(lat);
-                document.getElementById('latD').value = latP.d;
-                document.getElementById('latM').value = latP.m;
-                document.getElementById('latS').value = latP.s;
-
-                // Täytä kentät (Lon)
-                const lonP = ddToDmsSplit(lon);
-                document.getElementById('lonD').value = lonP.d;
-                document.getElementById('lonM').value = lonP.m;
-                document.getElementById('lonS').value = lonP.s;
-                
-                calc(); // Päivitä laskut heti
-            }, (err) => {
-                console.error(err);
-                alert("GPS Virhe. Varmista HTTPS ja luvat.");
-                toggleGPS(); // Reset button
-            }, { enableHighAccuracy: true });
-        }
-    }
-
-    // 2. COMPASS TOGGLE
-    function toggleCompass() {
-        const btn = document.getElementById('btnCompass');
-
-        if (compassActive) {
-            // STOP
-            window.removeEventListener('deviceorientation', handleOrientation);
-            compassActive = false;
-            btn.classList.remove('active');
-            btn.innerHTML = '<span>🧭</span> Hae Kompassi';
-        } else {
-            // START
-            // iOS Permission Check
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission()
-                    .then(response => {
-                        if (response === 'granted') {
-                            startCompass(btn);
-                        } else {
-                            alert("Lupa evätty.");
-                        }
-                    })
-                    .catch(console.error);
-            } else {
-                // Android / Non-iOS
-                startCompass(btn);
-            }
-        }
-    }
-
-    function startCompass(btn) {
-        window.addEventListener('deviceorientation', handleOrientation);
-        compassActive = true;
-        btn.classList.add('active');
-        btn.innerHTML = '<span>🧭</span> Seurataan...';
-    }
-
-    function handleOrientation(e) {
-        let heading = 0;
-        
-        // iOS
-        if (e.webkitCompassHeading) {
-            heading = e.webkitCompassHeading;
-        } 
-        // Android / Standard (absolute)
-        else if (e.alpha) {
-            heading = 360 - e.alpha; // Yksinkertaistettu, saattaa vaatia 'absolute' lipun
-        }
-
-        if (heading) {
-            // Normalisoi 0-360
-            if (heading < 0) heading += 360;
-            if (heading >= 360) heading -= 360;
-
-            const unit = document.getElementById('azUnit').value;
-            let displayVal = heading;
-
-            // Muunna yksikköön
-            if (unit === 'mil') displayVal = heading * (6400 / 360);
-            if (unit === 'piiru') displayVal = heading * (6000 / 360);
-            
-            // Pyöristä ja aseta
-            document.getElementById('azimuth').value = Math.round(displayVal);
-            calc();
-        }
-    }
-
-    // --- MAIN CALC ---
+    // MAIN CALC
     function calc() {
         const fov = parseFloat(document.getElementById('fov').value);
         const res = parseFloat(document.getElementById('res').value);
         const tPx = parseFloat(document.getElementById('tPx').value);
-        const tReal = parseFloat(document.getElementById('tReal').value);
         const elev = parseFloat(document.getElementById('elev').value) || 0;
+        
+        let ground = 0;
 
-        // Reset inputs
-        if (!fov || !res || !tPx || !tReal) {
-            document.getElementById('rSlant').innerText = "---";
-            document.getElementById('rGround').innerText = "---";
-            document.getElementById('rHeight').innerText = "---";
-            return;
-        }
+        if(!fov || !res || !tPx) { resetRes(); return; }
 
-        // 1. Optics
         const fovRad = getRad(fov, document.getElementById('fovUnit').value);
         const angle = (fovRad / res) * tPx;
-        
-        // D = (W/2) / tan(a/2)
-        const slant = (tReal / 2) / Math.tan(angle / 2);
-        const ground = slant * Math.cos(toRad(elev));
-        const height = slant * Math.sin(toRad(elev));
 
-        document.getElementById('rSlant').innerText = slant.toFixed(0) + " m";
-        document.getElementById('rGround').innerText = Math.abs(ground).toFixed(0) + " m";
-        document.getElementById('rHeight').innerText = (height>0?"+":"") + height.toFixed(0) + " m";
+        if (mode === 'dist') {
+            // MODE: DISTANCE
+            const tReal = parseFloat(document.getElementById('tReal').value);
+            if(!tReal) { resetRes(); return; }
+
+            const slant = (tReal / 2) / Math.tan(angle / 2);
+            ground = slant * Math.cos(toRad(elev));
+            const height = slant * Math.sin(toRad(elev));
+
+            document.getElementById('rSlant').innerText = slant.toFixed(0) + " m";
+            document.getElementById('rGround').innerText = Math.abs(ground).toFixed(0) + " m";
+            document.getElementById('rHeight').innerText = (height>0?"+":"") + height.toFixed(0) + " m";
+
+        } else {
+            // MODE: SIZE
+            const knownDist = parseFloat(document.getElementById('knownDist').value);
+            if(!knownDist) { resetRes(); return; }
+            
+            // Assume input is slant range? Usually known dist is ground map dist.
+            // Let's assume ground distance for logic.
+            // Slant = Ground / cos(elev)
+            const slant = knownDist / Math.cos(toRad(elev));
+            const size = 2 * slant * Math.tan(angle / 2);
+            
+            document.getElementById('rSize').innerText = size.toFixed(2) + " m";
+            ground = knownDist; // For coords calc
+            
+            // Still show height diff based on known dist
+            const height = slant * Math.sin(toRad(elev));
+            document.getElementById('rHeight').innerText = (height>0?"+":"") + height.toFixed(0) + " m";
+        }
 
         updateJohnson(tPx);
         calcCoords(ground);
     }
 
     function calcCoords(dist) {
-        // Oma Sijainti DMS -> DD
         const latD = parseFloat(document.getElementById('latD').value);
         const latM = parseFloat(document.getElementById('latM').value)||0;
         const latS = parseFloat(document.getElementById('latS').value)||0;
         const lonD = parseFloat(document.getElementById('lonD').value);
         const lonM = parseFloat(document.getElementById('lonM').value)||0;
         const lonS = parseFloat(document.getElementById('lonS').value)||0;
-        
         const azVal = parseFloat(document.getElementById('azimuth').value);
 
-        if (!azVal) {
-            document.getElementById('rCoords').innerText = "---";
-            document.getElementById('rShift').innerText = "N: --- E: ---";
-            return;
+        if(!azVal) { 
+             document.getElementById('rShift').innerText = "---";
+             document.getElementById('rCoords').innerText = "---";
+             return; 
         }
 
         const azRad = getRad(azVal, document.getElementById('azUnit').value);
-
-        // 2. Grid Shift
+        
+        // Shift
         const dN = dist * Math.cos(azRad);
         const dE = dist * Math.sin(azRad);
         document.getElementById('rShift').innerText = `N: ${dN>0?'+':''}${dN.toFixed(0)}m  E: ${dE>0?'+':''}${dE.toFixed(0)}m`;
 
-        // 3. WGS84 Destination
-        if (!latD || !lonD) {
-            document.getElementById('rCoords').innerText = "Syötä Oma Sijainti";
-            return;
-        }
-
+        // WGS84
+        if(!latD || !lonD) return;
         const lat1 = toRad(latD + latM/60 + latS/3600);
         const lon1 = toRad(lonD + lonM/60 + lonS/3600);
-        const R = 6371000; 
-
+        const R = 6371000;
         const lat2 = Math.asin(Math.sin(lat1)*Math.cos(dist/R) + Math.cos(lat1)*Math.sin(dist/R)*Math.cos(azRad));
         const lon2 = lon1 + Math.atan2(Math.sin(azRad)*Math.sin(dist/R)*Math.cos(lat1), Math.cos(dist/R)-Math.sin(lat1)*Math.sin(lat2));
-
-        document.getElementById('rCoords').innerHTML = ddToDmsStr(toDeg(lat2), true) + "<br>" + ddToDmsStr(toDeg(lon2), false);
+        
+        document.getElementById('rCoords').innerHTML = dms(toDeg(lat2),1) + "<br>" + dms(toDeg(lon2),0);
     }
 
-    // --- UI HELPERS ---
+    function resetRes() {
+        document.getElementById('rSlant').innerText = "---";
+        document.getElementById('rGround').innerText = "---";
+        document.getElementById('rSize').innerText = "---";
+    }
+
     function updateJohnson(px) {
         const j1=document.getElementById('j1'), j2=document.getElementById('j2'), j3=document.getElementById('j3'), t=document.getElementById('jTxt');
         j1.className=j2.className=j3.className="step";
@@ -432,31 +471,57 @@
         if(px>=13){j3.classList.add("active","l3"); t.innerText="TUNNISTUS"; t.style.color="#27ae60";}
     }
 
-    function applyPre() { document.getElementById('tReal').value = document.getElementById('pre').value; calc(); }
-
-    // --- PROFILES ---
-    let profs = JSON.parse(localStorage.getItem('tj_profs_v2') || '{}');
-    function loadProfile() {
-        const p = profs[document.getElementById('profileSelector').value];
-        if(p) { 
-            document.getElementById('fov').value=p.f; document.getElementById('res').value=p.r; document.getElementById('fovUnit').value=p.u; 
-            calc();
+    // --- SENSORS & PROFILES (Shortened for brevity but functional) ---
+    // GPS
+    let wId=null;
+    function toggleGPS(){
+        const b=document.getElementById('btnGps');
+        if(wId){navigator.geolocation.clearWatch(wId);wId=null;b.classList.remove('active');}
+        else{
+            b.classList.add('active');
+            wId=navigator.geolocation.watchPosition(p=>{
+                const lat=p.coords.latitude, lon=p.coords.longitude;
+                const lp=splitD(lat), lo=splitD(lon);
+                document.getElementById('latD').value=lp.d; document.getElementById('latM').value=lp.m; document.getElementById('latS').value=lp.s;
+                document.getElementById('lonD').value=lo.d; document.getElementById('lonM').value=lo.m; document.getElementById('lonS').value=lo.s;
+                calc();
+            }, e=>{alert('GPS Error');toggleGPS();}, {enableHighAccuracy:true});
         }
     }
-    function saveProfile() {
-        const n = prompt("Profiilin nimi?"); if(!n)return;
-        profs[n] = { f:document.getElementById('fov').value, r:document.getElementById('res').value, u:document.getElementById('fovUnit').value };
-        localStorage.setItem('tj_profs_v2', JSON.stringify(profs)); updateSel();
+    function splitD(deg){const a=Math.abs(deg),d=Math.floor(a),m=Math.floor((a-d)*60),s=((a-d-m/60)*3600).toFixed(1); return {d:d*(deg<0?-1:1),m:m,s:s};}
+
+    // Compass
+    let cAct=false;
+    function toggleCompass(){
+        const b=document.getElementById('btnCompass');
+        if(cAct){window.removeEventListener('deviceorientation', hOr);cAct=false;b.classList.remove('active');}
+        else{
+            if(typeof DeviceOrientationEvent!=='undefined' && typeof DeviceOrientationEvent.requestPermission==='function'){
+                DeviceOrientationEvent.requestPermission().then(r=>{if(r==='granted')sComp(b);}).catch(console.error);
+            } else sComp(b);
+        }
     }
-    function updateSel() {
-        const s = document.getElementById('profileSelector'); s.innerHTML='<option value="">-- Valitse Profiili --</option>';
-        for(let k in profs) { let o=document.createElement('option'); o.value=k; o.text=k; s.add(o); }
+    function sComp(b){window.addEventListener('deviceorientation',hOr);cAct=true;b.classList.add('active');}
+    function hOr(e){
+        let h=e.webkitCompassHeading || (e.alpha?360-e.alpha:0);
+        if(h){
+            if(h<0)h+=360; if(h>=360)h-=360;
+            const u=document.getElementById('azUnit').value;
+            let v=h; if(u==='mil')v=h*(6400/360); if(u==='piiru')v=h*(6000/360);
+            document.getElementById('azimuth').value=Math.round(v); calc();
+        }
     }
-    function deleteProfile() { 
-        const n=document.getElementById('profileSelector').value; 
-        if(profs[n]) { delete profs[n]; localStorage.setItem('tj_profs_v2',JSON.stringify(profs)); updateSel(); }
-    }
-    window.onload = function() { updateSel(); calc(); };
+    
+    // Profiles
+    let profs=JSON.parse(localStorage.getItem('tj_profs_v2')||'{}');
+    function loadProfile(){const p=profs[document.getElementById('profileSelector').value];if(p){document.getElementById('fov').value=p.f;document.getElementById('res').value=p.r;document.getElementById('fovUnit').value=p.u;calc();}}
+    function saveProfile(){const n=prompt("Nimi?");if(!n)return;profs[n]={f:document.getElementById('fov').value,r:document.getElementById('res').value,u:document.getElementById('fovUnit').value};localStorage.setItem('tj_profs_v2',JSON.stringify(profs));uSel();}
+    function deleteProfile(){const n=document.getElementById('profileSelector').value;if(profs[n]){delete profs[n];localStorage.setItem('tj_profs_v2',JSON.stringify(profs));uSel();}}
+    function uSel(){const s=document.getElementById('profileSelector');s.innerHTML='<option value="">-- Valitse Profiili --</option>';for(let k in profs){let o=document.createElement('option');o.value=k;o.text=k;s.add(o);}}
+    
+    // INIT
+    function openInfo(){document.getElementById('infoModal').style.display='block';}
+    window.onload=function(){uSel(); initTargets(); calc();}
 </script>
 </body>
 </html>
