@@ -116,3 +116,28 @@ Sijaintitietoja tai kameran tietoja EI lähetetä millekään palvelimelle.
 Profiilit ja omat maalit tallennetaan selaimen välimuistiin (LocalStorage).
 
 ========================================================================
+8. AR-TÄHTÄIN (Lisätty v11)
+========================================================================
+Sovelluksessa on nyt kokeellinen AR-tila (Augmented Reality).
+Pääset siihen etusivun napista "📷 Siirry AR-Tähtäimeen".
+
+MITEN SE TOIMII?
+Käyttää puhelimen kameraa ja piirtää näytölle mittauskehyksen.
+1. Valitse maali (esim. BTR).
+2. Säädä liukusäätimellä kehys maalin kokoiseksi.
+3. Lue etäisyys näytöltä.
+
+TÄRKEÄÄ: KALIBROINTI
+Jotta mittaus on tarkka, sinun täytyy kertoa sovellukselle puhelimesi 
+kameran kuvakulma (FOV).
+1. Mene AR-tilaan ja paina "⚙ Kalibroi".
+2. Aseta tunnettu kohde (esim. ovi) tasan 5 metrin päähän.
+3. Säädä kehys täsmälleen oven kokoiseksi.
+4. Tallenna.
+Nyt puhelimesi on kalibroitu ja mittaukset ovat tarkempia.
+
+JÄÄDYTYS-TOIMINTO (❄️)
+Käden tärinän estämiseksi voit painaa "Jäädytä"-nappia. Kuva pysähtyy, 
+jolloin voit rauhassa sovittaa kehyksen maaliin.
+========================================================================
+========================================================================
