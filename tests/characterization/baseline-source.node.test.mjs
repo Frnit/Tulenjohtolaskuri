@@ -37,4 +37,3 @@ test('CHAR-PWA-001 static service-worker baseline contract', () => {
   assert.doesNotMatch(source, /addEventListener\(['"]activate['"]/);
   assert.doesNotMatch(source, /cache\.put\(/);
 });
-
