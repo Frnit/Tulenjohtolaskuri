@@ -61,6 +61,7 @@
         .modal-content { color: #fff; text-align: center; margin-top: 20%; font-family: sans-serif; }
         .modal-content input { padding: 10px; width: 80px; text-align: center; font-size: 1.2rem; margin: 10px; background: #333; color: #fff; border: 1px solid #555; }
         .persistence-warning { position: fixed; top: 60px; left: 10px; right: 10px; z-index: 30; padding: 8px; border: 1px solid #f39c12; border-radius: 4px; background: rgba(58,43,18,0.95); color: #ffd27f; font: 0.75rem sans-serif; pointer-events: auto; }
+        .sensor-status { position: fixed; top: 105px; left: 10px; right: 10px; z-index: 30; padding: 8px; border: 1px solid #f39c12; border-radius: 4px; background: rgba(58,43,18,0.95); color: #ffd27f; font: 0.75rem sans-serif; pointer-events: auto; }
         .hidden { display: none; }
     </style>
 </head>
@@ -68,6 +69,7 @@
 
 <div id="camContainer"><video id="video" autoplay playsinline></video></div>
 <div id="persistenceWarnings" class="persistence-warning hidden" role="status"></div>
+<div id="sensorStatus" class="sensor-status hidden" role="status"></div>
 
 <div id="uiLayer">
     <div class="hud-top">
@@ -100,6 +102,7 @@
         <input type="range" id="sizeSlider" min="10" max="900" value="300" oninput="updateBox()">
         
         <div class="action-row">
+            <button class="act-btn" id="btnSensors" onclick="startArSensors(true)">KÄYNNISTÄ SENSORIT</button>
             <button class="act-btn" id="btnFreeze" onclick="toggleFreeze()">❄️ JÄÄDYTÄ</button>
         </div>
     </div>
@@ -122,6 +125,9 @@
 <script src="src/adapters/storage.js"></script>
 <script src="src/persistence/repository.js"></script>
 <script src="src/app/errors.js"></script>
+<script src="src/adapters/geolocation.js"></script>
+<script src="src/adapters/orientation.js"></script>
+<script src="src/adapters/camera.js"></script>
 <script src="src/app/state.js"></script>
 <script src="src/ui/safe-dom.js"></script>
 <script>
@@ -132,6 +138,9 @@
         session: TJL.createStorageAdapter(() => window.sessionStorage)
     });
     const appState = TJL.createAppState(persistenceRepository.loadAll({targets: defaultTargets}));
+    const cameraAdapter = TJL.createCameraAdapter({video: document.getElementById('video')});
+    const geolocationAdapter = TJL.createGeolocationAdapter();
+    const orientationAdapter = TJL.createOrientationAdapter();
     let targetSize = 2.3; 
     let fovDeg = Number(appState.settings.arFov) || 70.0;
     let isFrozen = false;
@@ -139,8 +148,7 @@
 
     // --- INIT ---
     window.onload = function() {
-        startCamera();
-        initSensors();
+        startArSensors(false);
         loadTargets();
         renderPersistenceWarnings();
         updateFovDisplay();
@@ -185,38 +193,60 @@
     }
 
     // --- CAMERA & SENSORS ---
-    function startCamera() {
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-            .then(s => document.getElementById('video').srcObject = s)
-            .catch(e => alert("Kamera: " + e));
+    function renderArSensorStatus() {
+        const states = appState.sensors;
+        const notices = [];
+        if (states.camera.status === 'error') notices.push('Kamera ei ole käytettävissä.');
+        if (states.geolocation.status === 'error') notices.push('GPS ei ole käytettävissä.');
+        if (states.orientation.permission === 'prompt') notices.push('Suunta-anturi vaatii käynnistyspainikkeen.');
+        else if (states.orientation.status === 'error') notices.push('Suunta-anturi ei ole käytettävissä.');
+
+        const element = document.getElementById('sensorStatus');
+        TJL.safeDom.setText(element, notices.join(' ') + (notices.length ? ' Manuaalinen laskenta toimii pääsivulla.' : ''));
+        element.classList.toggle('hidden', notices.length === 0);
+
+        const allActive = states.camera.status === 'active' &&
+            states.geolocation.status === 'active' &&
+            states.orientation.status === 'active';
+        TJL.safeDom.setText('btnSensors', allActive ? 'SENSORIT KÄYTÖSSÄ' : 'KÄYNNISTÄ SENSORIT');
     }
 
-    function initSensors() {
-        // Compass
-        if (window.DeviceOrientationEvent) {
-            window.addEventListener('deviceorientation', e => {
-                let h = e.webkitCompassHeading || (e.alpha ? 360-e.alpha : 0);
-                if (h<0) h+=360; if (h>=360) h-=360;
-                // Show in MIL
-                document.getElementById('hudAz').innerText = Math.round(h * (6400/360));
-            });
-        }
-        // GPS
-        if (navigator.geolocation) {
-            navigator.geolocation.watchPosition(p => {
-                const lat = p.coords.latitude.toFixed(4);
-                const lon = p.coords.longitude.toFixed(4);
-                document.getElementById('hudGps').innerText = `${lat}, ${lon}`;
-            }, e => {}, {enableHighAccuracy:true});
-        }
+    cameraAdapter.subscribe(state => {
+        appState.sensors.camera = state;
+        renderArSensorStatus();
+    });
+
+    geolocationAdapter.subscribe(state => {
+        appState.sensors.geolocation = state;
+        if (state.value) TJL.safeDom.setText('hudGps', `${state.value.latitude.toFixed(4)}, ${state.value.longitude.toFixed(4)}`);
+        else if (state.status === 'error') TJL.safeDom.setText('hudGps', 'GPS: EI KÄYTÖSSÄ');
+        else TJL.safeDom.setText('hudGps', 'GPS: ODOTTAA...');
+        renderArSensorStatus();
+    });
+
+    orientationAdapter.subscribe(state => {
+        appState.sensors.orientation = state;
+        if (state.value) TJL.safeDom.setText('hudAz', Math.round(state.value.headingDegrees * (6400 / 360)));
+        else TJL.safeDom.setText('hudAz', '---');
+        renderArSensorStatus();
+    });
+
+    async function startArSensors(requestPermission) {
+        await Promise.all([
+            cameraAdapter.start(),
+            geolocationAdapter.start(),
+            orientationAdapter.start({requestPermission: Boolean(requestPermission)})
+        ]);
+        renderArSensorStatus();
     }
 
-    function toggleFreeze() {
-        const v = document.getElementById('video');
+    async function toggleFreeze() {
         const b = document.getElementById('btnFreeze');
-        if (isFrozen) { v.play(); b.classList.remove('active'); b.innerText="❄️ JÄÄDYTÄ"; }
-        else { v.pause(); b.classList.add('active'); b.innerText="▶ JATKA"; }
+        const result = await cameraAdapter.freeze(!isFrozen);
+        if (!result.ok) return;
         isFrozen = !isFrozen;
+        b.classList.toggle('active', isFrozen);
+        TJL.safeDom.setText(b, isFrozen ? '▶ JATKA' : '❄️ JÄÄDYTÄ');
     }
 
     // --- CALCULATION ---

@@ -3,12 +3,29 @@
 
     const namespace = global.TJL = global.TJL || {};
 
+    function emptySensorState(fallback) {
+        return {
+            availability: 'unknown',
+            permission: 'unknown',
+            status: 'idle',
+            value: null,
+            observedAt: null,
+            error: null,
+            fallback: fallback
+        };
+    }
+
     namespace.createAppState = function createAppState(initial) {
         return {
             stateVersion: 1,
             targets: initial.targets,
             profiles: initial.profiles,
             settings: initial.settings,
+            sensors: {
+                camera: emptySensorState('manual-workflow'),
+                geolocation: emptySensorState('manual-position'),
+                orientation: emptySensorState('manual-bearing')
+            },
             inputRevision: 0,
             result: {
                 status: 'empty',
