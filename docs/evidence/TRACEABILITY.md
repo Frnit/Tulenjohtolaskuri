@@ -1,0 +1,32 @@
+# P2.1 software-evidence traceability
+
+Baseline for every row: `797d77ff72d28c5a1e88b82e4155c2d0de93dbd2`.
+
+Passing characterization or defect evidence means that the named baseline behavior
+was reproduced. It does not approve that behavior as a product requirement.
+
+| ID | Class | Source evidence | Executable evidence | Current baseline result | Future use |
+| --- | --- | --- | --- | --- | --- |
+| `BASE-001` | Baseline | Audited commit and source hashes | `tests/characterization/baseline-source.node.test.mjs` | Exact production files are recoverable from the audited commit | Establish recoverability; verify each future HEAD separately by diff/blob comparison |
+| `CHAR-START-001` | Historical characterization | Phase 0 startup finding | Baseline commit and repository history | Targets initialized before profile initialization raised `updateSel is not defined` | Superseded by `CHG-P2-2-STARTUP-001`; retain as historical evidence |
+| `DEF-START-001` | Resolved defect | Phase 0 startup defect | `CHG-P2-2-STARTUP-001`, `tests/target/startup.pw.spec.mjs` | Profile population and incoming AR value consumption are no longer blocked | Guarded by `ACC-START-001` and `ACC-HANDOFF-001` |
+| `ACC-START-001` | Accepted target | `CHG-P2-2-STARTUP-001` | `tests/target/startup.pw.spec.mjs` | Targets and saved profiles initialize without page errors | Guard main-page startup |
+| `ACC-HANDOFF-001` | Accepted target | `CHG-P2-2-STARTUP-001` | `tests/target/startup.pw.spec.mjs` | Incoming AR distance is consumed once and selects the size workflow | Preserve the legacy handoff until P2.8 replaces its contract |
+| `CHAR-STORAGE-CORRUPT-001` | Characterization | Phase 0 storage finding | `tests/characterization/storage.pw.spec.mjs` | Malformed target or profile JSON raises a parse error at its current evaluation point | Input for P2.3 storage requirements |
+| `CHAR-STORAGE-EMPTY-001` | Characterization | Phase 0 storage finding | `tests/characterization/storage.pw.spec.mjs` | Main renders only its placeholder without a startup error; AR has no selection and raises while reading it | Input for P2.3 storage requirements |
+| `HARNESS-STORAGE-FAULTS-001` | Accepted harness capability | Phase 1 testability requirement | `tests/browser/storage-harness.pw.spec.mjs` | Harness deterministically changes an existing value to missing and supplies read-error, write-error and quota-error cases | Exercise approved P2.3 behavior |
+| `CHAR-UI-VIEW-001` | Characterization | Phase 1 workflow inventory | `tests/characterization/view-switch.pw.spec.mjs` | Current tab, input-view and result-group visibility is recorded | Preserve workflows without freezing visual layout |
+| `DEF-UI-VIEW-001` | Known defect | Phase 0 UI finding | `tests/defects/view-switch.pw.spec.mjs` | Size calculation consumes optics fields that are hidden with the distance view | Convert after an approved UI fix |
+| `CHAR-HANDOFF-001` | Historical characterization | Phase 0 AR/main finding | Baseline commit and repository history | AR wrote scalar `tj_incoming_dist`; main startup failed before consuming it | Superseded by `ACC-HANDOFF-001`; input for the future P2.8 handoff envelope |
+| `CHAR-RESET-001` | Characterization | Phase 0 storage finding | `tests/characterization/reset.pw.spec.mjs` | Reset clears every key in the origin LocalStorage namespace | Input for scoped reset design |
+| `SEC-RENDER-001` | Known security defect | Phase 0 rendering finding | `tests/defects/safe-rendering.pw.spec.mjs` | A harmless user-defined markup marker becomes an element through `innerHTML` | Convert after an approved safe-rendering fix |
+| `CHAR-PWA-001` | Characterization | Phase 0 service-worker finding | `tests/characterization/baseline-source.node.test.mjs`, `tests/pwa/current-baseline.pw.spec.mjs` | Cache name, three precache entries, registration and offline index reload are reproduced; AR and icon are absent | Extend with versioned release fixtures |
+| `CHAR-PWA-OWNERSHIP-001` | Characterization | Phase 0 cache-ownership finding | `tests/pwa/current-baseline.pw.spec.mjs` | Global `caches.match` can return a response placed in another cache | Input for future cache ownership rules |
+| `HARNESS-NODE-DISCOVERY-001` | Accepted harness capability | P2.1 fail-closed requirement | `tests/target/runner-fail-closed.node.test.mjs` | Empty Node discovery fails unless the caller explicitly supplies `--allow-empty` | Prevent missing tests from producing a green stage |
+| `HARNESS-SERVER-PATHS-001` | Accepted harness capability | P2.1 test-server safety requirement | `tests/target/test-server.node.test.mjs` | Intended application files are served; dot-prefixed, encoded-dot, traversal and malformed paths are denied | Keep repository internals outside browser reach |
+| `REQ-OFFLINE-CORE-001` | Accepted target alias for Phase 1 `REQ-003` | Phase 1 `REQ-003`: no required cloud, CDN or runtime network service | `tests/target/harness-invariants.node.test.mjs` | Partial check: production HTML has no absolute external runtime script or stylesheet URL | Extend before claiming complete offline behavior |
+| `REQ-WORKFLOW-001` | Accepted target alias for Phase 1 `REQ-008` | Phase 1 `REQ-008`: preserve the two reciprocal workflows | `tests/target/workflow.pw.spec.mjs` | Both main workflows can be selected | Retain without asserting historical pixel layout |
+
+Future changes should add the approved `CHG` or `ADR` identifier and the resulting
+`ACC` test to the relevant row. When a defect is fixed, its positive defect-signature
+test must fail until it is replaced by an accepted target regression test.
