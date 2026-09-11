@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { collectPageErrors, seedStorage } from '../support/browser-fixtures.mjs';
+import {
+  BASELINE_MAIN_STARTUP_ERROR,
+  collectPageErrors,
+  pageErrorDetails,
+  seedStorage
+} from '../support/browser-fixtures.mjs';
 
 test('@known-defect DEF-START-001 [KNOWN BASELINE DEFECT] updateSel blocks profile and AR handoff startup work', async ({ page }) => {
   await seedStorage(page, {
@@ -10,9 +15,9 @@ test('@known-defect DEF-START-001 [KNOWN BASELINE DEFECT] updateSel blocks profi
 
   await page.goto('/index.html');
 
-  await expect.poll(() => errors.map((error) => error.message)).toContain(
-    'updateSel is not defined'
-  );
+  await expect.poll(() => pageErrorDetails(errors)).toEqual([
+    BASELINE_MAIN_STARTUP_ERROR
+  ]);
   await expect(page.locator('#profileSelector option')).toHaveCount(1);
   await expect(page.locator('#knownDist')).toHaveValue('');
   await expect(page.locator('#tabDist')).toHaveClass(/active/);

@@ -21,6 +21,7 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
+          persist-credentials: false
 
       - name: Install pnpm 11.19.0
         uses: pnpm/action-setup@v4

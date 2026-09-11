@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test('@target REQ-WORKFLOW-001 both declared main workflows remain selectable', async ({ page }) => {
+test('@target REQ-WORKFLOW-001 [Phase 1 REQ-008] both declared main workflows remain selectable', async ({ page }) => {
   await page.goto('/index.html');
 
   await page.locator('#tabSize').click();

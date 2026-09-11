@@ -24,7 +24,17 @@ const contentTypes = new Map([
 ]);
 
 function resolveRequestPath(url, root) {
-  const pathname = decodeURIComponent(new URL(url, 'http://127.0.0.1').pathname);
+  let pathname;
+  try {
+    const rawPathname = url.split(/[?#]/, 1)[0].replaceAll('\\', '/');
+    pathname = decodeURIComponent(rawPathname).replaceAll('\\', '/');
+  } catch {
+    return null;
+  }
+
+  const pathSegments = pathname.split('/').filter(Boolean);
+  if (pathSegments.some((segment) => segment.startsWith('.'))) return null;
+
   const requested = pathname === '/' ? '/index.html' : pathname;
   const resolved = path.resolve(root, `.${requested}`);
   const relative = path.relative(root, resolved);

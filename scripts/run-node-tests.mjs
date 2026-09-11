@@ -3,7 +3,9 @@ import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import process from 'node:process';
 
-const requested = process.argv.slice(2);
+const argumentsList = process.argv.slice(2);
+const allowEmpty = argumentsList.includes('--allow-empty');
+const requested = argumentsList.filter((argument) => argument !== '--allow-empty');
 const categories = requested.length > 0
   ? requested
   : ['characterization', 'defects', 'target'];
@@ -24,14 +26,24 @@ async function collect(directory) {
 }
 
 const files = [];
+const emptyCategories = [];
 for (const category of categories) {
-  files.push(...await collect(path.resolve('tests', category)));
+  const categoryFiles = await collect(path.resolve('tests', category));
+  files.push(...categoryFiles);
+  if (categoryFiles.length === 0) emptyCategories.push(category);
 }
 
-if (files.length === 0) {
-  console.log(`No Node tests in categories: ${categories.join(', ')}`);
-  process.exit(0);
+if (emptyCategories.length > 0) {
+  const message = `No Node tests in categories: ${emptyCategories.join(', ')}`;
+  if (allowEmpty) {
+    console.log(`${message} (explicitly allowed)`);
+  } else {
+    console.error(`${message}; refusing to pass an empty test class`);
+    process.exit(1);
+  }
 }
+
+if (files.length === 0) process.exit(0);
 
 const result = spawnSync(
   process.execPath,
@@ -40,4 +52,3 @@ const result = spawnSync(
 );
 
 process.exit(result.status ?? 1);
-

@@ -19,7 +19,7 @@ test('HARNESS-TAXONOMY-001 evidence classes have separate repository paths', asy
   }
 });
 
-test('REQ-OFFLINE-CORE-001 production HTML has no external runtime assets', async () => {
+test('REQ-OFFLINE-CORE-001 [Phase 1 REQ-003] production HTML has no external runtime assets', async () => {
   for (const file of ['index.html', 'ar.html']) {
     const source = await readFile(file, 'utf8');
     assert.doesNotMatch(source, /<(?:script|link)\b[^>]*(?:src|href)\s*=\s*['"]https?:\/\//i, file);

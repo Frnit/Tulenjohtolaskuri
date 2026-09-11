@@ -53,5 +53,11 @@ test('@characterization CHAR-STORAGE-EMPTY-001 AR dereferences a missing selecti
 
   await expect(page.locator('#targetSelect option')).toHaveCount(0);
   expect(await page.locator('#targetSelect').evaluate((select) => select.selectedIndex)).toBe(-1);
-  await expect.poll(() => errors.some((error) => /text/.test(error.message))).toBe(true);
+  await expect.poll(() => errors.map((error) => ({
+    name: error.name,
+    message: error.message
+  }))).toEqual([{
+    name: 'TypeError',
+    message: "Cannot read properties of undefined (reading 'text')"
+  }]);
 });

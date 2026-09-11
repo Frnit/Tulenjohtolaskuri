@@ -10,7 +10,7 @@
   "scripts": {
     "serve:test": "node tests/support/test-server.mjs",
     "test:node:characterization": "node scripts/run-node-tests.mjs characterization",
-    "test:node:defects": "node scripts/run-node-tests.mjs defects",
+    "test:node:defects": "node scripts/run-node-tests.mjs --allow-empty defects",
     "test:target": "node scripts/run-node-tests.mjs target",
     "test:browser:characterization": "node scripts/run-browser-tests.mjs --grep @characterization --grep-invert @pwa",
     "test:browser:defects": "node scripts/run-browser-tests.mjs --grep @known-defect",
