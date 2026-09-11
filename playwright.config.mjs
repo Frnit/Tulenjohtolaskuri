@@ -23,12 +23,5 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] }
     }
-  ],
-  webServer: {
-    command: 'node tests/support/test-server.mjs --port=4173 --root=.',
-    url: 'http://127.0.0.1:4173/index.html',
-    reuseExistingServer: false,
-    timeout: 15_000
-  }
+  ]
 });
-

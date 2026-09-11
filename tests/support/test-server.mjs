@@ -2,6 +2,7 @@ import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import process from 'node:process';
 
 const argumentsMap = new Map(
@@ -10,9 +11,6 @@ const argumentsMap = new Map(
     return [key, value];
   })
 );
-
-const port = Number.parseInt(argumentsMap.get('port') || '4173', 10);
-const root = path.resolve(argumentsMap.get('root') || '.');
 
 const contentTypes = new Map([
   ['.css', 'text/css; charset=utf-8'],
@@ -25,7 +23,7 @@ const contentTypes = new Map([
   ['.webmanifest', 'application/manifest+json; charset=utf-8']
 ]);
 
-function resolveRequestPath(url) {
+function resolveRequestPath(url, root) {
   const pathname = decodeURIComponent(new URL(url, 'http://127.0.0.1').pathname);
   const requested = pathname === '/' ? '/index.html' : pathname;
   const resolved = path.resolve(root, `.${requested}`);
@@ -35,38 +33,60 @@ function resolveRequestPath(url) {
   return resolved;
 }
 
-const server = createServer(async (request, response) => {
-  const filePath = resolveRequestPath(request.url || '/');
+export async function startTestServer({ port = 4173, root: rootValue = '.' } = {}) {
+  const root = path.resolve(rootValue);
+  const server = createServer(async (request, response) => {
+    const filePath = resolveRequestPath(request.url || '/', root);
 
-  if (!filePath || !['GET', 'HEAD'].includes(request.method || '')) {
-    response.writeHead(filePath ? 405 : 403).end();
-    return;
-  }
+    if (!filePath || !['GET', 'HEAD'].includes(request.method || '')) {
+      response.writeHead(filePath ? 405 : 403).end();
+      return;
+    }
 
-  try {
-    const fileStat = await stat(filePath);
-    if (!fileStat.isFile()) throw new Error('Not a file');
+    try {
+      const fileStat = await stat(filePath);
+      if (!fileStat.isFile()) throw new Error('Not a file');
 
-    response.writeHead(200, {
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Content-Length': fileStat.size,
-      'Content-Type': contentTypes.get(path.extname(filePath).toLowerCase()) ||
-        'application/octet-stream'
-    });
+      response.writeHead(200, {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Content-Length': fileStat.size,
+        'Content-Type': contentTypes.get(path.extname(filePath).toLowerCase()) ||
+          'application/octet-stream'
+      });
 
-    if (request.method === 'HEAD') response.end();
-    else createReadStream(filePath).pipe(response);
-  } catch {
-    response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-    response.end('Not found');
-  }
-});
+      if (request.method === 'HEAD') response.end();
+      else createReadStream(filePath).pipe(response);
+    } catch {
+      response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+      response.end('Not found');
+    }
+  });
 
-server.listen(port, '127.0.0.1', () => {
-  console.log(`Test server listening on http://127.0.0.1:${port}`);
-});
-
-for (const signal of ['SIGINT', 'SIGTERM']) {
-  process.on(signal, () => server.close(() => process.exit(0)));
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(port, '127.0.0.1', resolve);
+  });
+  return server;
 }
 
+export async function stopTestServer(server) {
+  await new Promise((resolve) => {
+    server.close(resolve);
+    server.closeAllConnections();
+  });
+}
+
+const invokedPath = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : '';
+if (import.meta.url === invokedPath) {
+  const port = Number.parseInt(argumentsMap.get('port') || '4173', 10);
+  const root = argumentsMap.get('root') || '.';
+  const server = await startTestServer({ port, root });
+  console.log(`Test server listening on http://127.0.0.1:${port}`);
+
+  for (const signal of ['SIGINT', 'SIGTERM']) {
+    process.on(signal, async () => {
+      await stopTestServer(server);
+      process.exit(0);
+    });
+  }
+}
