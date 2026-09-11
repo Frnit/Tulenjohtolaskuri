@@ -58,6 +58,7 @@
         .hidden { display: none; }
         
         .reset-btn { background: #c0392b; color: white; border: none; width: 100%; padding: 10px; margin-top: 20px; border-radius: 4px; font-weight: bold; cursor: pointer;}
+        .persistence-warning { margin: 0 15px 12px; padding: 10px; border: 1px solid var(--warning); border-radius: 4px; background: #3a2b12; color: #ffd27f; font-size: 0.8rem; }
     </style>
 </head>
 <body>
@@ -67,6 +68,8 @@
         <h2>TJ-Laskuri Pro</h2>
         <button class="info-btn" onclick="openInfo()">i</button>
     </div>
+
+    <div id="persistenceWarnings" class="persistence-warning hidden" role="status"></div>
 
     <button class="ar-link-btn" onclick="location.href='ar.html'"><span>📷</span> Siirry AR-Tähtäimeen ➔</button>
     
@@ -175,26 +178,50 @@
     </div>
 </div>
 
+<script src="src/adapters/storage.js"></script>
+<script src="src/persistence/repository.js"></script>
+<script src="src/app/state.js"></script>
 <script>
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(console.error);
 
     let mode = 'dist';
     const defaultTargets = [{n:"Mies (0.5m)",s:0.5},{n:"Mies (1.8m)",s:1.8},{n:"BTR / Pas",s:2.9},{n:"Kuorma-auto",s:2.5}];
-    let targets = JSON.parse(localStorage.getItem('tj_targets') || JSON.stringify(defaultTargets));
+    const persistenceRepository = TJL.createPersistenceRepository({
+        local: TJL.createStorageAdapter(() => window.localStorage),
+        session: TJL.createStorageAdapter(() => window.sessionStorage)
+    });
+    const appState = TJL.createAppState(persistenceRepository.loadAll({targets: defaultTargets}));
+    let targets = appState.targets;
+    let profs = appState.profiles;
+
+    function renderPersistenceWarnings() {
+        const warnings = persistenceRepository.warnings();
+        appState.persistence.warnings = warnings;
+        appState.persistence.status = warnings.length ? 'warning' : 'ready';
+        const element = document.getElementById('persistenceWarnings');
+        if (!warnings.length) {
+            element.textContent = '';
+            element.classList.add('hidden');
+            return;
+        }
+        element.textContent = warnings.map(warning => `${warning.key}: ${warning.message}`).join(' ');
+        element.classList.remove('hidden');
+    }
 
     // --- STARTUP LOGIC ---
     window.onload = function() {
         initTargets();
         uSel();
+        renderPersistenceWarnings();
         
         // CHECK FOR AR RESULT
-        const incoming = localStorage.getItem('tj_incoming_dist');
+        const incoming = persistenceRepository.readLegacyIncomingDistance();
         if (incoming) {
             // Found data from AR!
             console.log("Loaded from AR:", incoming);
             setTab('size'); // Switch to Size tab (which uses Known Dist)
             document.getElementById('knownDist').value = incoming;
-            localStorage.removeItem('tj_incoming_dist'); // Clear it
+            persistenceRepository.removeLegacyIncomingDistance(); // Clear it
             
             // Optional: Scroll to result
             setTimeout(() => {
@@ -208,8 +235,9 @@
 
     function resetAll() {
         if(confirm("Tämä poistaa kaikki profiilit, kalibroinnit ja omat maalit. Oletko varma?")) {
-            localStorage.clear();
-            location.reload();
+            const result = persistenceRepository.resetOwned();
+            if (result.ok) location.reload();
+            else renderPersistenceWarnings();
         }
     }
 
@@ -231,8 +259,8 @@
         const l = document.getElementById('targetList'); l.innerHTML='';
         targets.forEach((t,i)=>{let li=document.createElement('li');li.className='target-item';li.innerHTML=`<span>${t.n}</span> <button onclick="delT(${i})">X</button>`;l.appendChild(li);});
     }
-    function addTarget(){const n=document.getElementById('newTgtName').value, s=parseFloat(document.getElementById('newTgtSize').value);if(n&&s){targets.push({n:n,s:s}); localStorage.setItem('tj_targets',JSON.stringify(targets)); initTargets();}}
-    function delT(i){if(confirm('Poista?')){targets.splice(i,1); localStorage.setItem('tj_targets',JSON.stringify(targets)); initTargets();}}
+    function addTarget(){const n=document.getElementById('newTgtName').value, s=parseFloat(document.getElementById('newTgtSize').value);if(n&&s){const nextTargets=targets.concat({n:n,s:s});if(persistenceRepository.saveTargets(nextTargets).ok){targets=nextTargets;appState.targets=targets;initTargets();}renderPersistenceWarnings();}}
+    function delT(i){if(confirm('Poista?')){const nextTargets=targets.filter((_,index)=>index!==i);if(persistenceRepository.saveTargets(nextTargets).ok){targets=nextTargets;appState.targets=targets;initTargets();}renderPersistenceWarnings();}}
     function applyTarget(){document.getElementById('tReal').value=document.getElementById('targetSelect').value; calc();}
     function openTargetManager(){document.getElementById('targetModal').style.display='block';}
     function openInfo(){document.getElementById('infoModal').style.display='block';}
@@ -317,10 +345,9 @@
     let cAct=false; function toggleCompass(){const b=document.getElementById('btnCompass');if(cAct){window.removeEventListener('deviceorientation',hOr);cAct=false;b.classList.remove('active');}else{if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){DeviceOrientationEvent.requestPermission().then(r=>{if(r==='granted')sC(b);});}else sC(b);}}
     function sC(b){window.addEventListener('deviceorientation',hOr);cAct=true;b.classList.add('active');}
     function hOr(e){let h=e.webkitCompassHeading||(e.alpha?360-e.alpha:0);if(h){if(h<0)h+=360;if(h>=360)h-=360;const u=document.getElementById('azUnit').value;let v=h;if(u==='mil')v=h*(6400/360);if(u==='piiru')v=h*(6000/360);document.getElementById('azimuth').value=Math.round(v);calc();}}
-    let profs=JSON.parse(localStorage.getItem('tj_profs_v2')||'{}');
     function loadProfile(){const p=profs[document.getElementById('profileSelector').value];if(p){document.getElementById('fov').value=p.f;document.getElementById('res').value=p.r;document.getElementById('fovUnit').value=p.u;calc();}}
-    function saveProfile(){const n=prompt("Nimi?");if(!n)return;profs[n]={f:document.getElementById('fov').value,r:document.getElementById('res').value,u:document.getElementById('fovUnit').value};localStorage.setItem('tj_profs_v2',JSON.stringify(profs));uSel();}
-    function deleteProfile(){const n=document.getElementById('profileSelector').value;if(profs[n]){delete profs[n];localStorage.setItem('tj_profs_v2',JSON.stringify(profs));uSel();}}
+    function saveProfile(){const n=prompt("Nimi?");if(!n)return;const nextProfiles=Object.assign({},profs,{[n]:{f:document.getElementById('fov').value,r:document.getElementById('res').value,u:document.getElementById('fovUnit').value}});if(persistenceRepository.saveProfiles(nextProfiles).ok){profs=nextProfiles;appState.profiles=profs;uSel();}renderPersistenceWarnings();}
+    function deleteProfile(){const n=document.getElementById('profileSelector').value;if(profs[n]){const nextProfiles=Object.assign({},profs);delete nextProfiles[n];if(persistenceRepository.saveProfiles(nextProfiles).ok){profs=nextProfiles;appState.profiles=profs;uSel();}renderPersistenceWarnings();}}
     function uSel(){const s=document.getElementById('profileSelector');s.innerHTML='<option value="">-- Valitse Profiili --</option>';for(let k in profs){let o=document.createElement('option');o.value=k;o.text=k;s.add(o);}}
 </script>
 </body>

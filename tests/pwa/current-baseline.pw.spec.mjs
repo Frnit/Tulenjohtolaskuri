@@ -26,7 +26,14 @@ test('@pwa @characterization CHAR-PWA-001 registers the worker and precaches the
 
   expect(state.registrations).toHaveLength(1);
   expect(state.cacheNames).toContain('tj-laskuri-v1');
-  expect(state.paths).toEqual(['/', '/index.html', '/manifest.json']);
+  expect(state.paths).toEqual([
+    '/',
+    '/index.html',
+    '/manifest.json',
+    '/src/adapters/storage.js',
+    '/src/app/state.js',
+    '/src/persistence/repository.js'
+  ]);
   expect(state.paths).not.toContain('/ar.html');
   expect(state.paths).not.toContain('/icon.png');
 });
