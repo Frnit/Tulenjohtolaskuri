@@ -183,6 +183,8 @@
 <script src="src/adapters/storage.js"></script>
 <script src="src/persistence/repository.js"></script>
 <script src="src/app/errors.js"></script>
+<script src="src/adapters/geolocation.js"></script>
+<script src="src/adapters/orientation.js"></script>
 <script src="src/app/state.js"></script>
 <script src="src/ui/safe-dom.js"></script>
 <script>
@@ -195,8 +197,51 @@
         session: TJL.createStorageAdapter(() => window.sessionStorage)
     });
     const appState = TJL.createAppState(persistenceRepository.loadAll({targets: defaultTargets}));
+    const geolocationAdapter = TJL.createGeolocationAdapter();
+    const orientationAdapter = TJL.createOrientationAdapter();
     let targets = appState.targets;
     let profs = appState.profiles;
+
+    function renderMainSensorState(kind, state) {
+        const button = document.getElementById(kind === 'geolocation' ? 'btnGps' : 'btnCompass');
+        const label = kind === 'geolocation' ? 'GPS' : 'KOMPASSI';
+        button.classList.toggle('active', state.status === 'active');
+        button.disabled = state.availability === 'unavailable' || state.availability === 'insecure-context';
+        if (state.status === 'active') TJL.safeDom.setText(button, `${label}: AKTIIVINEN`);
+        else if (state.status === 'starting') TJL.safeDom.setText(button, `${label}: KÄYNNISTYY`);
+        else if (state.permission === 'denied') TJL.safeDom.setText(button, `${label}: LUPA EVÄTTY`);
+        else if (state.availability !== 'available') TJL.safeDom.setText(button, `${label}: MANUAALI`);
+        else TJL.safeDom.setText(button, label);
+        button.title = state.error ? 'Sensori ei ole käytettävissä. Käytä manuaalista syöttöä.' : '';
+    }
+
+    geolocationAdapter.subscribe(state => {
+        appState.sensors.geolocation = state;
+        renderMainSensorState('geolocation', state);
+        if (!state.value) return;
+        const latitude = splitD(state.value.latitude);
+        const longitude = splitD(state.value.longitude);
+        document.getElementById('latD').value = latitude.d;
+        document.getElementById('latM').value = latitude.m;
+        document.getElementById('latS').value = latitude.s;
+        document.getElementById('lonD').value = longitude.d;
+        document.getElementById('lonM').value = longitude.m;
+        document.getElementById('lonS').value = longitude.s;
+        calc();
+    });
+
+    orientationAdapter.subscribe(state => {
+        appState.sensors.orientation = state;
+        renderMainSensorState('orientation', state);
+        if (!state.value) return;
+        const heading = state.value.headingDegrees;
+        const unit = document.getElementById('azUnit').value;
+        let value = heading;
+        if (unit === 'mil') value = heading * (6400 / 360);
+        if (unit === 'piiru') value = heading * (6000 / 360);
+        document.getElementById('azimuth').value = Math.round(value);
+        calc();
+    });
 
     function renderPersistenceWarnings() {
         const warnings = persistenceRepository.warnings();
@@ -402,11 +447,9 @@
     function get100kID(zone, easting, northing) {let set = zone % 6; if(set===0) set=6; const colBase = "ABCDEFGHJKLMNPQRSTUVWXYZ"; const rowBase = "ABCDEFGHJKLMNPQRSTUV"; let colBlock = Math.floor(easting / 100000); if(colBlock < 1 || colBlock > 8) return "XX"; let colIdx = (set - 1) * 8 + colBlock - 1; const colL = colBase[colIdx % 24]; let rowBlock = Math.floor(northing / 100000); let rowOffset = (set % 2 === 0) ? 5 : 0; let rowIdx = (rowOffset + rowBlock) % 20; const rowL = rowBase[rowIdx]; return colL + rowL;}
 
     // SENSORS & PROFILES (Shortened)
-    let wId=null; function toggleGPS(){const b=document.getElementById('btnGps'); if(wId){navigator.geolocation.clearWatch(wId);wId=null;b.classList.remove('active');} else{b.classList.add('active');wId=navigator.geolocation.watchPosition(p=>{const l=p.coords.latitude,n=p.coords.longitude;const lp=splitD(l),lo=splitD(n);document.getElementById('latD').value=lp.d;document.getElementById('latM').value=lp.m;document.getElementById('latS').value=lp.s;document.getElementById('lonD').value=lo.d;document.getElementById('lonM').value=lo.m;document.getElementById('lonS').value=lo.s;calc();},e=>{alert('GPS Err');toggleGPS();},{enableHighAccuracy:true});}}
+    async function toggleGPS(){const state=geolocationAdapter.capability();if(state.status==='active'||state.status==='starting')geolocationAdapter.stop();else await geolocationAdapter.start();}
     function splitD(d){const a=Math.abs(d),x=Math.floor(a),m=Math.floor((a-x)*60),s=((a-x-m/60)*3600).toFixed(1);return{d:x*(d<0?-1:1),m:m,s:s};}
-    let cAct=false; function toggleCompass(){const b=document.getElementById('btnCompass');if(cAct){window.removeEventListener('deviceorientation',hOr);cAct=false;b.classList.remove('active');}else{if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){DeviceOrientationEvent.requestPermission().then(r=>{if(r==='granted')sC(b);});}else sC(b);}}
-    function sC(b){window.addEventListener('deviceorientation',hOr);cAct=true;b.classList.add('active');}
-    function hOr(e){let h=e.webkitCompassHeading||(e.alpha?360-e.alpha:0);if(h){if(h<0)h+=360;if(h>=360)h-=360;const u=document.getElementById('azUnit').value;let v=h;if(u==='mil')v=h*(6400/360);if(u==='piiru')v=h*(6000/360);document.getElementById('azimuth').value=Math.round(v);calc();}}
+    async function toggleCompass(){const state=orientationAdapter.capability();if(state.status==='active'||state.status==='starting')orientationAdapter.stop();else await orientationAdapter.start({requestPermission:true});}
     function loadProfile(){const p=profs[document.getElementById('profileSelector').value];if(p){document.getElementById('fov').value=p.f;document.getElementById('res').value=p.r;document.getElementById('fovUnit').value=p.u;calc();}}
     function saveProfile(){const n=prompt("Nimi?");if(!n)return;const nextProfiles=Object.assign({},profs,{[n]:{f:document.getElementById('fov').value,r:document.getElementById('res').value,u:document.getElementById('fovUnit').value}});if(persistenceRepository.saveProfiles(nextProfiles).ok){profs=nextProfiles;appState.profiles=profs;uSel();}renderPersistenceWarnings();}
     function deleteProfile(){const n=document.getElementById('profileSelector').value;if(profs[n]){const nextProfiles=Object.assign({},profs);delete nextProfiles[n];if(persistenceRepository.saveProfiles(nextProfiles).ok){profs=nextProfiles;appState.profiles=profs;uSel();}renderPersistenceWarnings();}}

@@ -15,3 +15,7 @@ the application storage boundary.
 P2.4 UI targets verify that stored user text remains text, obsolete calculation
 outputs are removed when their inputs become unavailable, and a recoverable UI
 failure does not stop unrelated controls.
+
+P2.5 browser-adapter targets verify missing and denied sensor fallbacks, explicit
+orientation permission, camera freeze versus release, and resource cleanup on
+`pagehide`.
