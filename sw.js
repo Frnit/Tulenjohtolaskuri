@@ -2,7 +2,10 @@ const CACHE_NAME = 'tj-laskuri-v1';
 const ASSETS = [
   './',
   './index.html',
-  './manifest.json'
+  './manifest.json',
+  './src/adapters/storage.js',
+  './src/persistence/repository.js',
+  './src/app/state.js'
 ];
 
 // Asennus: Tallenna tiedostot välimuistiin

@@ -60,11 +60,14 @@
         #calibModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 100; padding: 20px; box-sizing: border-box; pointer-events: auto;}
         .modal-content { color: #fff; text-align: center; margin-top: 20%; font-family: sans-serif; }
         .modal-content input { padding: 10px; width: 80px; text-align: center; font-size: 1.2rem; margin: 10px; background: #333; color: #fff; border: 1px solid #555; }
+        .persistence-warning { position: fixed; top: 60px; left: 10px; right: 10px; z-index: 30; padding: 8px; border: 1px solid #f39c12; border-radius: 4px; background: rgba(58,43,18,0.95); color: #ffd27f; font: 0.75rem sans-serif; pointer-events: auto; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
 <div id="camContainer"><video id="video" autoplay playsinline></video></div>
+<div id="persistenceWarnings" class="persistence-warning hidden" role="status"></div>
 
 <div id="uiLayer">
     <div class="hud-top">
@@ -116,10 +119,19 @@
     </div>
 </div>
 
+<script src="src/adapters/storage.js"></script>
+<script src="src/persistence/repository.js"></script>
+<script src="src/app/state.js"></script>
 <script>
     // --- STATE ---
+    const defaultTargets = [{n:"Mies (0.5m)",s:0.5}, {n:"Mies (1.8m)",s:1.8}, {n:"BTR (2.9m)",s:2.9}, {n:"Auto (1.8m)",s:1.8}];
+    const persistenceRepository = TJL.createPersistenceRepository({
+        local: TJL.createStorageAdapter(() => window.localStorage),
+        session: TJL.createStorageAdapter(() => window.sessionStorage)
+    });
+    const appState = TJL.createAppState(persistenceRepository.loadAll({targets: defaultTargets}));
     let targetSize = 2.3; 
-    let fovDeg = parseFloat(localStorage.getItem('tj_ar_fov')) || 70.0; 
+    let fovDeg = Number(appState.settings.arFov) || 70.0;
     let isFrozen = false;
     let currentDist = 0;
 
@@ -128,15 +140,28 @@
         startCamera();
         initSensors();
         loadTargets();
+        renderPersistenceWarnings();
         updateFovDisplay();
         updateBox();
     };
 
     // --- SHARED LIBRARY LOGIC ---
+    function renderPersistenceWarnings() {
+        const warnings = persistenceRepository.warnings();
+        appState.persistence.warnings = warnings;
+        appState.persistence.status = warnings.length ? 'warning' : 'ready';
+        const element = document.getElementById('persistenceWarnings');
+        if (!warnings.length) {
+            element.textContent = '';
+            element.classList.add('hidden');
+            return;
+        }
+        element.textContent = warnings.map(warning => `${warning.key}: ${warning.message}`).join(' ');
+        element.classList.remove('hidden');
+    }
+
     function loadTargets() {
-        const defaultT = [{n:"Mies (0.5m)",s:0.5}, {n:"Mies (1.8m)",s:1.8}, {n:"BTR (2.9m)",s:2.9}, {n:"Auto (1.8m)",s:1.8}];
-        const stored = JSON.parse(localStorage.getItem('tj_targets'));
-        const targets = stored || defaultT; // Use shared list if available
+        const targets = appState.targets;
         
         const sel = document.getElementById('targetSelect');
         sel.innerHTML = '';
@@ -147,6 +172,18 @@
             sel.add(opt);
         });
         
+        if (!sel.options.length) {
+            const option = document.createElement('option');
+            option.text = 'Ei tallennettuja kohteita';
+            option.disabled = true;
+            option.selected = true;
+            sel.add(option);
+            targetSize = 0;
+            document.getElementById('bracketBox').setAttribute('data-tgt', 'EI KOHDETTA');
+            calculate();
+            return;
+        }
+
         // Set default to BTR-like size if possible
         if(sel.options.length > 2) sel.selectedIndex = 2;
         updateTarget();
@@ -190,6 +227,12 @@
     // --- CALCULATION ---
     function updateTarget() {
         const sel = document.getElementById('targetSelect');
+        if (sel.selectedIndex < 0 || !sel.options[sel.selectedIndex].value) {
+            targetSize = 0;
+            document.getElementById('bracketBox').setAttribute('data-tgt', 'EI KOHDETTA');
+            calculate();
+            return;
+        }
         targetSize = parseFloat(sel.value);
         document.getElementById('bracketBox').setAttribute('data-tgt', sel.options[sel.selectedIndex].text);
         calculate();
@@ -217,7 +260,11 @@
     function useResult() {
         if(currentDist > 0) {
             // Save to shared storage
-            localStorage.setItem('tj_incoming_dist', currentDist);
+            const result = persistenceRepository.writeLegacyIncomingDistance(currentDist);
+            if (!result.ok) {
+                renderPersistenceWarnings();
+                return;
+            }
             // Go back
             location.href = 'index.html';
         } else {
@@ -236,7 +283,12 @@
         const angle = 2 * Math.atan((w/2)/d);
         const newFov = (angle / (px / window.innerWidth)) * (180/Math.PI);
         
-        localStorage.setItem('tj_ar_fov', newFov.toFixed(2));
+        const nextSettings = Object.assign({}, appState.settings, {arFov: Number(newFov.toFixed(2))});
+        if (!persistenceRepository.saveSettings(nextSettings).ok) {
+            renderPersistenceWarnings();
+            return;
+        }
+        appState.settings = nextSettings;
         fovDeg = newFov;
         updateFovDisplay();
         document.getElementById('calibModal').style.display='none';
