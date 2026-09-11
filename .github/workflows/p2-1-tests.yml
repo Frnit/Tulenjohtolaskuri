@@ -1,0 +1,70 @@
+name: P2.1 software evidence
+
+on:
+  pull_request:
+  push:
+    branches:
+      - next
+      - feature/p2-1-test-harness
+
+permissions:
+  contents: read
+
+jobs:
+  evidence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm 11.19.0
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+          run_install: false
+
+      - name: Install Node.js from .nvmrc
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install exact test dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run Node characterization evidence
+        run: pnpm run test:node:characterization
+
+      - name: Run Node known-defect evidence
+        run: pnpm run test:node:defects
+
+      - name: Run accepted harness requirements
+        run: pnpm run test:target
+
+      - name: Run browser characterization evidence
+        run: pnpm run test:browser:characterization
+
+      - name: Run KNOWN BASELINE DEFECT evidence
+        run: pnpm run test:browser:defects
+
+      - name: Run accepted browser harness requirements
+        run: pnpm run test:browser:target
+
+      - name: Run PWA characterization evidence
+        run: pnpm run test:pwa
+
+      - name: Preserve diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p2-1-playwright-diagnostics
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
