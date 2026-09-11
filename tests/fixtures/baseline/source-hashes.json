@@ -1,0 +1,11 @@
+{
+  "baselineSha": "797d77ff72d28c5a1e88b82e4155c2d0de93dbd2",
+  "files": {
+    "index.html": "4b842735fe9cafd556875ddf19b89d19d98c36a04accbd5926f9644b9ee4eddd",
+    "ar.html": "aa8ed3d7372a2ce86f19a7d6c134471899d04b8e4c5941308d57e3f01071239a",
+    "manifest.json": "91c09d2cb4919e476fd8ed9f6b5318031fd7c983bb8159cb375e2626dadfe9cf",
+    "sw.js": "8d3add482767ecb4f2bd08576e0182d13bac9599da9c5f4ecb3cb34ca9f45afc",
+    "readme.txt": "3980639bf79753b0526f701e54f992c9d341d6c7c18c415927d4cb77c8c3b845",
+    "icon.png": "ef4148afd6449647de7617b2fcb86cb41926b52a3d7b17df8fe6c6e9a7c58ee0"
+  }
+}

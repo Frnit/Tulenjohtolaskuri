@@ -1,0 +1,24 @@
+{
+  "name": "tulenjohtolaskuri-test-harness",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.19.0",
+  "engines": {
+    "node": "24.19.x"
+  },
+  "scripts": {
+    "serve:test": "node tests/support/test-server.mjs",
+    "test:node:characterization": "node scripts/run-node-tests.mjs characterization",
+    "test:node:defects": "node scripts/run-node-tests.mjs --allow-empty defects",
+    "test:target": "node scripts/run-node-tests.mjs target",
+    "test:browser:characterization": "node scripts/run-browser-tests.mjs --grep @characterization --grep-invert @pwa",
+    "test:browser:defects": "node scripts/run-browser-tests.mjs --grep @known-defect",
+    "test:browser:target": "node scripts/run-browser-tests.mjs --grep @target",
+    "test:pwa": "node scripts/run-browser-tests.mjs tests/pwa --workers=1",
+    "test": "pnpm run test:node:characterization && pnpm run test:node:defects && pnpm run test:target && pnpm run test:browser:characterization && pnpm run test:browser:defects && pnpm run test:browser:target && pnpm run test:pwa"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}
