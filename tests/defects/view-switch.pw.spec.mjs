@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test';
 import {
-  BASELINE_MAIN_STARTUP_ERROR,
   collectPageErrors,
   pageErrorDetails
 } from '../support/browser-fixtures.mjs';
@@ -19,7 +18,5 @@ test('@known-defect DEF-UI-VIEW-001 [KNOWN BASELINE DEFECT] size workflow consum
   await expect(page.locator('#res')).toBeHidden();
   await expect(page.locator('#tPx')).toBeHidden();
   await expect(page.locator('#rSize')).not.toHaveText('(Syötä optiikka)');
-  await expect.poll(() => pageErrorDetails(errors)).toEqual([
-    BASELINE_MAIN_STARTUP_ERROR
-  ]);
+  await expect.poll(() => pageErrorDetails(errors)).toEqual([]);
 });
