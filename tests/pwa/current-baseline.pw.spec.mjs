@@ -31,8 +31,10 @@ test('@pwa @characterization CHAR-PWA-001 registers the worker and precaches the
     '/index.html',
     '/manifest.json',
     '/src/adapters/storage.js',
+    '/src/app/errors.js',
     '/src/app/state.js',
-    '/src/persistence/repository.js'
+    '/src/persistence/repository.js',
+    '/src/ui/safe-dom.js'
   ]);
   expect(state.paths).not.toContain('/ar.html');
   expect(state.paths).not.toContain('/icon.png');
