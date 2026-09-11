@@ -121,7 +121,9 @@
 
 <script src="src/adapters/storage.js"></script>
 <script src="src/persistence/repository.js"></script>
+<script src="src/app/errors.js"></script>
 <script src="src/app/state.js"></script>
+<script src="src/ui/safe-dom.js"></script>
 <script>
     // --- STATE ---
     const defaultTargets = [{n:"Mies (0.5m)",s:0.5}, {n:"Mies (1.8m)",s:1.8}, {n:"BTR (2.9m)",s:2.9}, {n:"Auto (1.8m)",s:1.8}];
@@ -152,11 +154,11 @@
         appState.persistence.status = warnings.length ? 'warning' : 'ready';
         const element = document.getElementById('persistenceWarnings');
         if (!warnings.length) {
-            element.textContent = '';
+            TJL.safeDom.setText(element, '');
             element.classList.add('hidden');
             return;
         }
-        element.textContent = warnings.map(warning => `${warning.key}: ${warning.message}`).join(' ');
+        TJL.safeDom.setText(element, warnings.map(warning => `${warning.key}: ${warning.message}`).join(' '));
         element.classList.remove('hidden');
     }
 
@@ -164,20 +166,13 @@
         const targets = appState.targets;
         
         const sel = document.getElementById('targetSelect');
-        sel.innerHTML = '';
+        TJL.safeDom.empty(sel);
         targets.forEach(t => {
-            let opt = document.createElement('option');
-            opt.value = t.s;
-            opt.text = `${t.n} (${t.s}m)`;
-            sel.add(opt);
+            TJL.safeDom.appendOption(sel, {value: t.s, text: `${t.n} (${t.s}m)`});
         });
         
         if (!sel.options.length) {
-            const option = document.createElement('option');
-            option.text = 'Ei tallennettuja kohteita';
-            option.disabled = true;
-            option.selected = true;
-            sel.add(option);
+            TJL.safeDom.appendOption(sel, {value: '', text: 'Ei tallennettuja kohteita', disabled: true, selected: true});
             targetSize = 0;
             document.getElementById('bracketBox').setAttribute('data-tgt', 'EI KOHDETTA');
             calculate();

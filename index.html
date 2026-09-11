@@ -59,6 +59,7 @@
         
         .reset-btn { background: #c0392b; color: white; border: none; width: 100%; padding: 10px; margin-top: 20px; border-radius: 4px; font-weight: bold; cursor: pointer;}
         .persistence-warning { margin: 0 15px 12px; padding: 10px; border: 1px solid var(--warning); border-radius: 4px; background: #3a2b12; color: #ffd27f; font-size: 0.8rem; }
+        .app-notice { margin: 0 15px 12px; padding: 10px; border: 1px solid var(--danger); border-radius: 4px; background: #3a1717; color: #ffb3ad; font-size: 0.8rem; }
     </style>
 </head>
 <body>
@@ -70,6 +71,7 @@
     </div>
 
     <div id="persistenceWarnings" class="persistence-warning hidden" role="status"></div>
+    <div id="appNotices" class="app-notice hidden" role="alert"></div>
 
     <button class="ar-link-btn" onclick="location.href='ar.html'"><span>📷</span> Siirry AR-Tähtäimeen ➔</button>
     
@@ -180,7 +182,9 @@
 
 <script src="src/adapters/storage.js"></script>
 <script src="src/persistence/repository.js"></script>
+<script src="src/app/errors.js"></script>
 <script src="src/app/state.js"></script>
+<script src="src/ui/safe-dom.js"></script>
 <script>
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(console.error);
 
@@ -200,11 +204,11 @@
         appState.persistence.status = warnings.length ? 'warning' : 'ready';
         const element = document.getElementById('persistenceWarnings');
         if (!warnings.length) {
-            element.textContent = '';
+            TJL.safeDom.setText(element, '');
             element.classList.add('hidden');
             return;
         }
-        element.textContent = warnings.map(warning => `${warning.key}: ${warning.message}`).join(' ');
+        TJL.safeDom.setText(element, warnings.map(warning => `${warning.key}: ${warning.message}`).join(' '));
         element.classList.remove('hidden');
     }
 
@@ -254,10 +258,11 @@
     }
 
     function initTargets() {
-        const sel = document.getElementById('targetSelect'); sel.innerHTML='<option value="" disabled selected>▾ Valitse</option>';
-        targets.forEach(t=>{let o=document.createElement('option');o.value=t.s;o.text=`${t.n}`;sel.add(o);});
-        const l = document.getElementById('targetList'); l.innerHTML='';
-        targets.forEach((t,i)=>{let li=document.createElement('li');li.className='target-item';li.innerHTML=`<span>${t.n}</span> <button onclick="delT(${i})">X</button>`;l.appendChild(li);});
+        const sel = TJL.safeDom.empty('targetSelect');
+        TJL.safeDom.appendOption(sel, {value: '', text: '▾ Valitse', disabled: true, selected: true});
+        targets.forEach(t => TJL.safeDom.appendOption(sel, {value: t.s, text: t.n}));
+        const list = TJL.safeDom.empty('targetList');
+        targets.forEach((target, index) => TJL.safeDom.appendTargetItem(list, target, index, delT));
     }
     function addTarget(){const n=document.getElementById('newTgtName').value, s=parseFloat(document.getElementById('newTgtSize').value);if(n&&s){const nextTargets=targets.concat({n:n,s:s});if(persistenceRepository.saveTargets(nextTargets).ok){targets=nextTargets;appState.targets=targets;initTargets();}renderPersistenceWarnings();}}
     function delT(i){if(confirm('Poista?')){const nextTargets=targets.filter((_,index)=>index!==i);if(persistenceRepository.saveTargets(nextTargets).ok){targets=nextTargets;appState.targets=targets;initTargets();}renderPersistenceWarnings();}}
@@ -268,7 +273,56 @@
     const toRad=d=>d*Math.PI/180, toDeg=r=>r*180/Math.PI;
     function getRad(v,u){if(!v)return 0; if(u==='deg')return toRad(v); if(u==='mil')return v*(2*Math.PI/6400); if(u==='piiru')return v*(2*Math.PI/6000); return v/1000;}
 
+    function clearCalculationOutputs() {
+        TJL.safeDom.setText('rGround', '---');
+        TJL.safeDom.setText('rSize', '---');
+        TJL.safeDom.setText('rShift', '---');
+        TJL.safeDom.setText('rMgrs', '---');
+    }
+
+    function clearAppNotice() {
+        appState.ui.notices = [];
+        TJL.safeDom.setText('appNotices', '');
+        document.getElementById('appNotices').classList.add('hidden');
+    }
+
+    function renderAppError(error) {
+        const notice = {code: error.code, messageKey: error.messageKey};
+        appState.ui.notices = [notice];
+        TJL.safeDom.setText('appNotices', 'Laskenta epäonnistui. Tarkista syötteet ja yritä uudelleen.');
+        document.getElementById('appNotices').classList.remove('hidden');
+    }
+
+    function runUiAction(source, action, revision) {
+        const activeRevision = revision || TJL.beginInputRevision(appState);
+        try {
+            const value = action();
+            TJL.acceptResult(appState, activeRevision, value);
+            return value;
+        } catch (cause) {
+            const error = TJL.createAppError({
+                kind: 'internal-defect',
+                code: 'ERR-UI-ACTION-001',
+                source: source,
+                recoverable: true,
+                messageKey: 'calculation-failed',
+                cause: cause
+            });
+            clearCalculationOutputs();
+            TJL.rejectResult(appState, activeRevision, error);
+            renderAppError(error);
+            console.error(`[${error.code}] ${error.source}`);
+            return null;
+        }
+    }
+
     function calc() {
+        const revision = TJL.beginInputRevision(appState);
+        clearAppNotice();
+        return runUiAction('main-calculation', () => calculateCurrentInputs(), revision);
+    }
+
+    function calculateCurrentInputs() {
         const elev = parseFloat(document.getElementById('elev').value) || 0;
         let ground = 0;
 
@@ -283,10 +337,11 @@
                 const angle = (getRad(fov, document.getElementById('fovUnit').value) / res) * tPx;
                 const slant = (tReal / 2) / Math.tan(angle / 2);
                 ground = slant * Math.cos(toRad(elev));
-                document.getElementById('rGround').innerText = Math.abs(ground).toFixed(0) + " m";
+                TJL.safeDom.setText('rGround', Math.abs(ground).toFixed(0) + " m");
             } else {
-                document.getElementById('rGround').innerText = "---";
+                TJL.safeDom.setText('rGround', '---');
             }
+            TJL.safeDom.setText('rSize', '---');
         } 
         // MODE SIZE: Known dist input (e.g. from AR)
         else {
@@ -302,36 +357,43 @@
                     const angle = (getRad(fov, document.getElementById('fovUnit').value) / res) * tPx;
                     const slant = knownDist / Math.cos(toRad(elev));
                     const size = 2 * slant * Math.tan(angle / 2);
-                    document.getElementById('rSize').innerText = size.toFixed(2) + " m";
+                    TJL.safeDom.setText('rSize', size.toFixed(2) + " m");
                 } else {
-                    document.getElementById('rSize').innerText = "(Syötä optiikka)";
+                    TJL.safeDom.setText('rSize', '(Syötä optiikka)');
                 }
+            } else {
+                TJL.safeDom.setText('rSize', '---');
             }
+            TJL.safeDom.setText('rGround', '---');
         }
 
-        calcCoords(ground);
+        const coordinates = calcCoords(ground);
+        if (!ground) return null;
+        return {mode: mode, ground: ground, coordinates: coordinates};
     }
 
     function calcCoords(dist) {
-        if(!dist) { document.getElementById('rShift').innerText="---"; document.getElementById('rMgrs').innerText="---"; return; }
+        if(!dist) { TJL.safeDom.setText('rShift', '---'); TJL.safeDom.setText('rMgrs', '---'); return null; }
 
         const latD=parseFloat(document.getElementById('latD').value), latM=parseFloat(document.getElementById('latM').value)||0, latS=parseFloat(document.getElementById('latS').value)||0;
         const lonD=parseFloat(document.getElementById('lonD').value), lonM=parseFloat(document.getElementById('lonM').value)||0, lonS=parseFloat(document.getElementById('lonS').value)||0;
         const azVal=parseFloat(document.getElementById('azimuth').value);
 
-        if(!azVal) { document.getElementById('rShift').innerText="---"; document.getElementById('rMgrs').innerText="---"; return; }
+        if(!azVal) { TJL.safeDom.setText('rShift', '---'); TJL.safeDom.setText('rMgrs', '---'); return null; }
 
         const azRad = getRad(azVal, document.getElementById('azUnit').value);
         const dN = dist * Math.cos(azRad), dE = dist * Math.sin(azRad);
-        document.getElementById('rShift').innerText = `N: ${dN>0?'+':''}${dN.toFixed(0)}m  E: ${dE>0?'+':''}${dE.toFixed(0)}m`;
+        TJL.safeDom.setText('rShift', `N: ${dN>0?'+':''}${dN.toFixed(0)}m  E: ${dE>0?'+':''}${dE.toFixed(0)}m`);
 
-        if(!latD || !lonD) return;
+        if(!latD || !lonD) { TJL.safeDom.setText('rMgrs', '---'); return {dN: dN, dE: dE, mgrs: null}; }
         const lat1 = toRad(latD + latM/60 + latS/3600);
         const lon1 = toRad(lonD + lonM/60 + lonS/3600);
         const R = 6371000;
         const lat2 = Math.asin(Math.sin(lat1)*Math.cos(dist/R) + Math.cos(lat1)*Math.sin(dist/R)*Math.cos(azRad));
         const lon2 = lon1 + Math.atan2(Math.sin(azRad)*Math.sin(dist/R)*Math.cos(lat1), Math.cos(dist/R)-Math.sin(lat1)*Math.sin(lat2));
-        try {document.getElementById('rMgrs').innerText = forward(toDeg(lat2), toDeg(lon2));} catch(e) {document.getElementById('rMgrs').innerText = "Err";}
+        const mgrs = forward(toDeg(lat2), toDeg(lon2));
+        TJL.safeDom.setText('rMgrs', mgrs);
+        return {dN: dN, dE: dE, mgrs: mgrs};
     }
 
     // MGRS Logic (Same as before)
@@ -348,7 +410,7 @@
     function loadProfile(){const p=profs[document.getElementById('profileSelector').value];if(p){document.getElementById('fov').value=p.f;document.getElementById('res').value=p.r;document.getElementById('fovUnit').value=p.u;calc();}}
     function saveProfile(){const n=prompt("Nimi?");if(!n)return;const nextProfiles=Object.assign({},profs,{[n]:{f:document.getElementById('fov').value,r:document.getElementById('res').value,u:document.getElementById('fovUnit').value}});if(persistenceRepository.saveProfiles(nextProfiles).ok){profs=nextProfiles;appState.profiles=profs;uSel();}renderPersistenceWarnings();}
     function deleteProfile(){const n=document.getElementById('profileSelector').value;if(profs[n]){const nextProfiles=Object.assign({},profs);delete nextProfiles[n];if(persistenceRepository.saveProfiles(nextProfiles).ok){profs=nextProfiles;appState.profiles=profs;uSel();}renderPersistenceWarnings();}}
-    function uSel(){const s=document.getElementById('profileSelector');s.innerHTML='<option value="">-- Valitse Profiili --</option>';for(let k in profs){let o=document.createElement('option');o.value=k;o.text=k;s.add(o);}}
+    function uSel(){const s=TJL.safeDom.empty('profileSelector');TJL.safeDom.appendOption(s,{value:'',text:'-- Valitse Profiili --'});for(let k in profs){TJL.safeDom.appendOption(s,{value:k,text:k});}}
 </script>
 </body>
 </html>

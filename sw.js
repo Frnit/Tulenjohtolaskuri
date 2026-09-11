@@ -5,7 +5,9 @@ const ASSETS = [
   './manifest.json',
   './src/adapters/storage.js',
   './src/persistence/repository.js',
-  './src/app/state.js'
+  './src/app/errors.js',
+  './src/app/state.js',
+  './src/ui/safe-dom.js'
 ];
 
 // Asennus: Tallenna tiedostot välimuistiin
