@@ -66,11 +66,6 @@ export function collectPageErrors(page) {
   return errors;
 }
 
-export const BASELINE_MAIN_STARTUP_ERROR = Object.freeze({
-  name: 'ReferenceError',
-  message: 'updateSel is not defined'
-});
-
 export function pageErrorDetails(errors) {
   return errors.map((error) => ({ name: error.name, message: error.message }));
 }

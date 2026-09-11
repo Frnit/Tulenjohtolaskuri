@@ -32,16 +32,14 @@ test('@characterization CHAR-STORAGE-CORRUPT-001 malformed tj_profs_v2 is report
   expect(await page.evaluate(() => typeof window.resetAll)).toBe('function');
 });
 
-test('@characterization CHAR-STORAGE-EMPTY-001 main accepts an empty target collection then reaches the startup defect', async ({ page }) => {
+test('@characterization CHAR-STORAGE-EMPTY-001 main accepts an empty target collection without a startup error', async ({ page }) => {
   await seedStorage(page, { tj_targets: await fixture('empty-tj_targets.json') });
   const errors = collectPageErrors(page);
 
   await page.goto('/index.html');
 
   await expect(page.locator('#targetSelect option')).toHaveCount(1);
-  await expect.poll(() => errors.map((error) => error.message)).toContain(
-    'updateSel is not defined'
-  );
+  await expect.poll(() => errors.map((error) => error.message)).toEqual([]);
 });
 
 test('@characterization CHAR-STORAGE-EMPTY-001 AR dereferences a missing selection for an empty target collection', async ({ page }) => {

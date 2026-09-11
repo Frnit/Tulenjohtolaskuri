@@ -1,7 +1,6 @@
 import fs from 'node:fs/promises';
 import { test, expect } from '@playwright/test';
 import {
-  BASELINE_MAIN_STARTUP_ERROR,
   collectPageErrors,
   pageErrorDetails,
   seedStorage
@@ -18,7 +17,5 @@ test('@known-defect SEC-RENDER-001 [KNOWN BASELINE DEFECT] user-defined target t
   await page.goto('/index.html');
 
   await expect(page.locator('#targetList em[data-evidence="SEC-RENDER-001"]')).toHaveText('marker');
-  await expect.poll(() => pageErrorDetails(errors)).toEqual([
-    BASELINE_MAIN_STARTUP_ERROR
-  ]);
+  await expect.poll(() => pageErrorDetails(errors)).toEqual([]);
 });
