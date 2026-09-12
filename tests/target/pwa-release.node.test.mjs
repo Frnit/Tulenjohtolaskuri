@@ -15,9 +15,14 @@ test('ACC-PWA-RELEASE-001 release metadata is internally consistent', async () =
   assert.equal(release.releaseVersion, release.appVersion);
   assert.equal(release.cacheName, `tjl-core-${release.swBuildId}`);
   assert.equal(release.storageSchemaVersion, 1);
-  assert.match(release.releaseVersion, /^\d+\.\d+\.\d+-rc\.\d+$/);
-  assert.equal(release.commitSha, null, 'integration builds are stamped only when promoted to a release');
-  assert.equal(release.rollbackTarget, null, 'the rollback source is selected during release promotion');
+  assert.match(release.releaseVersion, /^\d+\.\d+\.\d+(?:-rc\.\d+)?$/);
+  if (release.commitSha === null) {
+    assert.equal(release.rollbackTarget, null, 'integration builds leave both promotion identifiers unset');
+  } else {
+    assert.match(release.commitSha, /^[0-9a-f]{40}$/, 'release identifies its accepted immutable source');
+    assert.match(release.rollbackTarget, /^[0-9a-f]{40}$/, 'release identifies its immutable rollback source');
+    assert.notEqual(release.commitSha, release.rollbackTarget);
+  }
   assert.equal(new Set(release.assets).size, release.assets.length);
   for (const required of [
     './', './index.html', './ar.html', './manifest.json', './icon.png', './readme.txt',
