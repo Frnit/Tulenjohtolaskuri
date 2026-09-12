@@ -21,6 +21,8 @@
         
         .header-bar { padding: 15px; text-align: center; position: relative; }
         h2 { margin: 0; font-size: 1.1rem; color: var(--text-muted); letter-spacing: 1px; }
+        .pwa-status { margin-top: 7px; color: var(--text-muted); font-size: 0.68rem; letter-spacing: 0.04em; }
+        .pwa-update-btn { margin-left: 6px; padding: 4px 7px; border: 1px solid var(--warning); border-radius: 4px; background: #302410; color: #ffd27f; font-size: 0.68rem; font-weight: 700; cursor: pointer; }
         .info-btn { position: absolute; top: 15px; right: 15px; background: #333; color: #fff; border:none; width:28px; height:28px; border-radius:50%; font-weight:bold; cursor: pointer; z-index: 10;}
         
         .ar-link-btn {
@@ -38,6 +40,14 @@
         input, select { width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border); color: #fff; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
         .row { display: flex; gap: 8px; align-items: flex-end; } .col { flex: 1; }
         .coord-group input { text-align: center; padding: 10px 2px; }
+        .position-format { display: flex; gap: 8px; margin: 6px 0 8px; }
+        .position-format label { flex: 1; margin: 0; }
+        .position-format input { position: absolute; opacity: 0; pointer-events: none; }
+        .position-format span { display: block; padding: 8px; border: 1px solid var(--border); border-radius: 4px; text-align: center; cursor: pointer; }
+        .position-format input:checked + span { border-color: var(--accent); background: #17344a; color: #fff; }
+        .position-format input:focus-visible + span { outline: 2px solid #fff; outline-offset: 2px; }
+        .position-feedback { min-height: 1.1em; margin: 5px 0 0; color: var(--text-muted); font-size: 0.72rem; }
+        .position-feedback.invalid { color: #ffb3ad; }
 
         .btn-group { display: flex; gap: 5px; margin-bottom: 15px; background: #252525; padding: 5px; border-radius: 6px; }
         .btn { padding: 10px; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; font-size: 0.8rem;}
@@ -58,6 +68,8 @@
         .hidden { display: none; }
         
         .reset-btn { background: #c0392b; color: white; border: none; width: 100%; padding: 10px; margin-top: 20px; border-radius: 4px; font-weight: bold; cursor: pointer;}
+        .persistence-warning { margin: 0 15px 12px; padding: 10px; border: 1px solid var(--warning); border-radius: 4px; background: #3a2b12; color: #ffd27f; font-size: 0.8rem; }
+        .app-notice { margin: 0 15px 12px; padding: 10px; border: 1px solid var(--danger); border-radius: 4px; background: #3a1717; color: #ffb3ad; font-size: 0.8rem; }
     </style>
 </head>
 <body>
@@ -65,8 +77,15 @@
 <div class="container">
     <div class="header-bar">
         <h2>TJ-Laskuri Pro</h2>
+        <div class="pwa-status" role="status">
+            <span id="pwaStatusText">OFFLINE: TARKISTETAAN</span>
+            <button id="pwaUpdateButton" class="pwa-update-btn" type="button" hidden>OTA KÄYTTÖÖN</button>
+        </div>
         <button class="info-btn" onclick="openInfo()">i</button>
     </div>
+
+    <div id="persistenceWarnings" class="persistence-warning hidden" role="status"></div>
+    <div id="appNotices" class="app-notice hidden" role="alert"></div>
 
     <button class="ar-link-btn" onclick="location.href='ar.html'"><span>📷</span> Siirry AR-Tähtäimeen ➔</button>
     
@@ -83,17 +102,27 @@
         </div>
 
         <div style="margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 15px;">
-            <label>Oma Sijainti (WGS84)</label>
-            <div class="row" style="margin-bottom: 5px;">
-                <div class="coord-group col">
-                    <input type="number" id="latD" placeholder="Lat °" oninput="calc()"><input type="number" id="latM" placeholder="'" oninput="calc()"><input type="number" id="latS" placeholder='"' oninput="calc()">
+            <label>Oma sijainti</label>
+            <div class="position-format" role="radiogroup" aria-label="Oman sijainnin koordinaattimuoto">
+                <label><input type="radio" name="positionFormat" value="wgs84" checked onchange="setPositionFormat(this.value)"><span>WGS84</span></label>
+                <label><input type="radio" name="positionFormat" value="mgrs" onchange="setPositionFormat(this.value)"><span>MGRS</span></label>
+            </div>
+            <div id="wgs84PositionFields">
+                <div class="row" style="margin-bottom: 5px;">
+                    <div class="coord-group col">
+                        <input type="number" id="latD" aria-label="Leveysasteet" placeholder="Lat °" oninput="calc()"><input type="number" id="latM" aria-label="Leveysminuutit" placeholder="'" oninput="calc()"><input type="number" id="latS" aria-label="Leveyssekunnit" placeholder='"' oninput="calc()">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="coord-group col">
+                        <input type="number" id="lonD" aria-label="Pituusasteet" placeholder="Lon °" oninput="calc()"><input type="number" id="lonM" aria-label="Pituusminuutit" placeholder="'" oninput="calc()"><input type="number" id="lonS" aria-label="Pituussekunnit" placeholder='"' oninput="calc()">
+                    </div>
                 </div>
             </div>
-            <div class="row">
-                <div class="coord-group col">
-                    <input type="number" id="lonD" placeholder="Lon °" oninput="calc()"><input type="number" id="lonM" placeholder="'" oninput="calc()"><input type="number" id="lonS" placeholder='"' oninput="calc()">
-                </div>
+            <div id="mgrsPositionFields" class="hidden">
+                <input type="text" id="observerMgrs" aria-label="Oma sijainti MGRS-muodossa" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="35V LH 12345 67890" oninput="onPositionInput()">
             </div>
+            <div id="positionFeedback" class="position-feedback" role="status" aria-live="polite"></div>
             <button id="btnGps" class="sensor-btn" onclick="toggleGPS()"><span>📍</span> GPS</button>
 
             <div class="row" style="margin-top:15px;">
@@ -106,13 +135,13 @@
         <div id="viewDist">
             <div class="row">
                 <div class="col" style="flex: 2.5;">
-                    <label>Maali (m)</label>
+                    <label>Esimerkkimaali ja mitattu ulottuvuus</label>
                     <div style="display:flex; gap:5px;">
                         <select id="targetSelect" onchange="applyTarget()" style="flex:1;"><option value="" disabled selected>▾</option></select>
                         <button onclick="openTargetManager()" style="background:#333; border:1px solid #444; color:#fff; border-radius:4px;">⚙</button>
                     </div>
                 </div>
-                <div class="col" style="flex: 1.5;"><label>Koko (m)</label><input type="number" id="tReal" placeholder="m" oninput="calc()"></div>
+                <div class="col" style="flex: 1.5;"><label>Valittu ulottuvuus (m)</label><input type="number" id="tReal" placeholder="m" oninput="calc()"></div>
             </div>
             
             <div class="row">
@@ -121,7 +150,7 @@
                 <div class="col" style="flex:1.5;"><label>Px</label><input type="number" id="res" value="1920" oninput="calc()"></div>
             </div>
             <div class="row">
-                <div class="col" style="flex: 1.5;"><label>Maali px</label><input type="number" id="tPx" placeholder="px" oninput="calc()"></div>
+                <div class="col" style="flex: 1.5;"><label>Sama ulottuvuus (px)</label><input type="number" id="tPx" placeholder="px" oninput="calc()"></div>
             </div>
         </div>
 
@@ -175,26 +204,107 @@
     </div>
 </div>
 
+<script src="src/adapters/storage.js"></script>
+<script src="src/persistence/repository.js"></script>
+<script src="src/app/errors.js"></script>
+<script src="src/adapters/geolocation.js"></script>
+<script src="src/adapters/orientation.js"></script>
+<script src="src/app/state.js"></script>
+<script src="src/ui/safe-dom.js"></script>
+<script src="src/domain/targets.js"></script>
+<script src="src/domain/coordinates.js"></script>
+<script src="src/pwa/release.js"></script>
+<script src="src/pwa/client.js"></script>
 <script>
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(console.error);
+    const pwaClient = TJL.createPwaClient();
+    TJL.bindPwaStatus(pwaClient, {
+        statusElement: document.getElementById('pwaStatusText'),
+        updateButton: document.getElementById('pwaUpdateButton')
+    });
+    pwaClient.register();
 
     let mode = 'dist';
-    const defaultTargets = [{n:"Mies (0.5m)",s:0.5},{n:"Mies (1.8m)",s:1.8},{n:"BTR / Pas",s:2.9},{n:"Kuorma-auto",s:2.5}];
-    let targets = JSON.parse(localStorage.getItem('tj_targets') || JSON.stringify(defaultTargets));
+    const defaultTargets = TJL.targetCatalog.copyExamples('distance');
+    const persistenceRepository = TJL.createPersistenceRepository({
+        local: TJL.createStorageAdapter(() => window.localStorage),
+        session: TJL.createStorageAdapter(() => window.sessionStorage)
+    });
+    const appState = TJL.createAppState(persistenceRepository.loadAll({targets: defaultTargets}));
+    const geolocationAdapter = TJL.createGeolocationAdapter();
+    const orientationAdapter = TJL.createOrientationAdapter();
+    let targets = appState.targets;
+    let profs = appState.profiles;
+
+    function renderMainSensorState(kind, state) {
+        const button = document.getElementById(kind === 'geolocation' ? 'btnGps' : 'btnCompass');
+        const label = kind === 'geolocation' ? 'GPS' : 'KOMPASSI';
+        button.classList.toggle('active', state.status === 'active');
+        button.disabled = state.availability === 'unavailable' || state.availability === 'insecure-context';
+        if (state.status === 'active') TJL.safeDom.setText(button, `${label}: AKTIIVINEN`);
+        else if (state.status === 'starting') TJL.safeDom.setText(button, `${label}: KÄYNNISTYY`);
+        else if (state.permission === 'denied') TJL.safeDom.setText(button, `${label}: LUPA EVÄTTY`);
+        else if (state.availability !== 'available') TJL.safeDom.setText(button, `${label}: MANUAALI`);
+        else TJL.safeDom.setText(button, label);
+        button.title = state.error ? 'Sensori ei ole käytettävissä. Käytä manuaalista syöttöä.' : '';
+    }
+
+    geolocationAdapter.subscribe(state => {
+        appState.sensors.geolocation = state;
+        renderMainSensorState('geolocation', state);
+        if (!state.value) return;
+        setPositionFormat('wgs84', false);
+        const latitude = splitD(state.value.latitude);
+        const longitude = splitD(state.value.longitude);
+        document.getElementById('latD').value = latitude.d;
+        document.getElementById('latM').value = latitude.m;
+        document.getElementById('latS').value = latitude.s;
+        document.getElementById('lonD').value = longitude.d;
+        document.getElementById('lonM').value = longitude.m;
+        document.getElementById('lonS').value = longitude.s;
+        calc();
+    });
+
+    orientationAdapter.subscribe(state => {
+        appState.sensors.orientation = state;
+        renderMainSensorState('orientation', state);
+        if (!state.value) return;
+        const heading = state.value.headingDegrees;
+        const unit = document.getElementById('azUnit').value;
+        let value = heading;
+        if (unit === 'mil') value = heading * (6400 / 360);
+        if (unit === 'piiru') value = heading * (6000 / 360);
+        document.getElementById('azimuth').value = Math.round(value);
+        calc();
+    });
+
+    function renderPersistenceWarnings() {
+        const warnings = persistenceRepository.warnings();
+        appState.persistence.warnings = warnings;
+        appState.persistence.status = warnings.length ? 'warning' : 'ready';
+        const element = document.getElementById('persistenceWarnings');
+        if (!warnings.length) {
+            TJL.safeDom.setText(element, '');
+            element.classList.add('hidden');
+            return;
+        }
+        TJL.safeDom.setText(element, warnings.map(warning => `${warning.key}: ${warning.message}`).join(' '));
+        element.classList.remove('hidden');
+    }
 
     // --- STARTUP LOGIC ---
     window.onload = function() {
         initTargets();
         uSel();
+        renderPersistenceWarnings();
         
         // CHECK FOR AR RESULT
-        const incoming = localStorage.getItem('tj_incoming_dist');
+        const incoming = persistenceRepository.readLegacyIncomingDistance();
         if (incoming) {
             // Found data from AR!
             console.log("Loaded from AR:", incoming);
             setTab('size'); // Switch to Size tab (which uses Known Dist)
             document.getElementById('knownDist').value = incoming;
-            localStorage.removeItem('tj_incoming_dist'); // Clear it
+            persistenceRepository.removeLegacyIncomingDistance(); // Clear it
             
             // Optional: Scroll to result
             setTimeout(() => {
@@ -208,8 +318,9 @@
 
     function resetAll() {
         if(confirm("Tämä poistaa kaikki profiilit, kalibroinnit ja omat maalit. Oletko varma?")) {
-            localStorage.clear();
-            location.reload();
+            const result = persistenceRepository.resetOwned();
+            if (result.ok) location.reload();
+            else renderPersistenceWarnings();
         }
     }
 
@@ -226,13 +337,20 @@
     }
 
     function initTargets() {
-        const sel = document.getElementById('targetSelect'); sel.innerHTML='<option value="" disabled selected>▾ Valitse</option>';
-        targets.forEach(t=>{let o=document.createElement('option');o.value=t.s;o.text=`${t.n}`;sel.add(o);});
-        const l = document.getElementById('targetList'); l.innerHTML='';
-        targets.forEach((t,i)=>{let li=document.createElement('li');li.className='target-item';li.innerHTML=`<span>${t.n}</span> <button onclick="delT(${i})">X</button>`;l.appendChild(li);});
+        const sel = TJL.safeDom.empty('targetSelect');
+        TJL.safeDom.appendOption(sel, {value: '', text: '▾ Valitse', disabled: true, selected: true});
+        targets.forEach(t => TJL.safeDom.appendOption(sel, {
+            value: t.s,
+            text: TJL.targetCatalog.label(t, 'distance')
+        }));
+        const list = TJL.safeDom.empty('targetList');
+        targets.forEach((target, index) => TJL.safeDom.appendTargetItem(list, {
+            ...target,
+            n: TJL.targetCatalog.label(target, 'distance')
+        }, index, delT));
     }
-    function addTarget(){const n=document.getElementById('newTgtName').value, s=parseFloat(document.getElementById('newTgtSize').value);if(n&&s){targets.push({n:n,s:s}); localStorage.setItem('tj_targets',JSON.stringify(targets)); initTargets();}}
-    function delT(i){if(confirm('Poista?')){targets.splice(i,1); localStorage.setItem('tj_targets',JSON.stringify(targets)); initTargets();}}
+    function addTarget(){const n=document.getElementById('newTgtName').value, s=parseFloat(document.getElementById('newTgtSize').value);if(n&&s){const nextTargets=targets.concat({n:n,s:s});if(persistenceRepository.saveTargets(nextTargets).ok){targets=nextTargets;appState.targets=targets;initTargets();}renderPersistenceWarnings();}}
+    function delT(i){if(confirm('Poista?')){const nextTargets=targets.filter((_,index)=>index!==i);if(persistenceRepository.saveTargets(nextTargets).ok){targets=nextTargets;appState.targets=targets;initTargets();}renderPersistenceWarnings();}}
     function applyTarget(){document.getElementById('tReal').value=document.getElementById('targetSelect').value; calc();}
     function openTargetManager(){document.getElementById('targetModal').style.display='block';}
     function openInfo(){document.getElementById('infoModal').style.display='block';}
@@ -240,7 +358,110 @@
     const toRad=d=>d*Math.PI/180, toDeg=r=>r*180/Math.PI;
     function getRad(v,u){if(!v)return 0; if(u==='deg')return toRad(v); if(u==='mil')return v*(2*Math.PI/6400); if(u==='piiru')return v*(2*Math.PI/6000); return v/1000;}
 
+    function setPositionFormat(format, shouldCalculate = true) {
+        const activeFormat = format === 'mgrs' ? 'mgrs' : 'wgs84';
+        document.querySelector(`input[name="positionFormat"][value="${activeFormat}"]`).checked = true;
+        document.getElementById('wgs84PositionFields').classList.toggle('hidden', activeFormat !== 'wgs84');
+        document.getElementById('mgrsPositionFields').classList.toggle('hidden', activeFormat !== 'mgrs');
+        TJL.safeDom.setText('positionFeedback', activeFormat === 'mgrs'
+            ? 'Syötä vyöhyke, leveysvyöhyke, 100 km ruutu ja 0–5 numeroparia.'
+            : '');
+        document.getElementById('positionFeedback').classList.remove('invalid');
+        if (activeFormat === 'mgrs' && document.getElementById('observerMgrs').value.trim()) readObserverPosition();
+        if (shouldCalculate) calc();
+    }
+
+    function onPositionInput() {
+        readObserverPosition();
+        calc();
+    }
+
+    function readObserverPosition() {
+        const format = document.querySelector('input[name="positionFormat"]:checked').value;
+        const feedback = document.getElementById('positionFeedback');
+        if (format === 'mgrs') {
+            const value = document.getElementById('observerMgrs').value;
+            if (!value.trim()) {
+                TJL.safeDom.setText(feedback, 'Syötä vyöhyke, leveysvyöhyke, 100 km ruutu ja 0–5 numeroparia.');
+                feedback.classList.remove('invalid');
+                return null;
+            }
+            const result = TJL.coordinates.mgrsToWgs84(value);
+            if (!result.ok) {
+                TJL.safeDom.setText(feedback, 'MGRS-koordinaatti ei ole kelvollinen. Tarkista vyöhyke, kirjaimet ja numeroparit.');
+                feedback.classList.add('invalid');
+                return null;
+            }
+            TJL.safeDom.setText(feedback, `Hyväksytty ${result.normalized} — ruudun tarkkuus ${result.precisionMeters} m.`);
+            feedback.classList.remove('invalid');
+            return {latitude: result.latitude, longitude: result.longitude};
+        }
+
+        const latitudeDegrees = parseFloat(document.getElementById('latD').value);
+        const latitudeMinutes = parseFloat(document.getElementById('latM').value) || 0;
+        const latitudeSeconds = parseFloat(document.getElementById('latS').value) || 0;
+        const longitudeDegrees = parseFloat(document.getElementById('lonD').value);
+        const longitudeMinutes = parseFloat(document.getElementById('lonM').value) || 0;
+        const longitudeSeconds = parseFloat(document.getElementById('lonS').value) || 0;
+        if (!Number.isFinite(latitudeDegrees) || !Number.isFinite(longitudeDegrees)) return null;
+        if (latitudeMinutes < 0 || latitudeMinutes >= 60 || latitudeSeconds < 0 || latitudeSeconds >= 60
+            || longitudeMinutes < 0 || longitudeMinutes >= 60 || longitudeSeconds < 0 || longitudeSeconds >= 60) return null;
+        const latitude = latitudeDegrees + Math.sign(latitudeDegrees || 1) * (latitudeMinutes / 60 + latitudeSeconds / 3600);
+        const longitude = longitudeDegrees + Math.sign(longitudeDegrees || 1) * (longitudeMinutes / 60 + longitudeSeconds / 3600);
+        if (latitude < -80 || latitude > 84 || longitude < -180 || longitude > 180) return null;
+        return {latitude, longitude};
+    }
+
+    function clearCalculationOutputs() {
+        TJL.safeDom.setText('rGround', '---');
+        TJL.safeDom.setText('rSize', '---');
+        TJL.safeDom.setText('rShift', '---');
+        TJL.safeDom.setText('rMgrs', '---');
+    }
+
+    function clearAppNotice() {
+        appState.ui.notices = [];
+        TJL.safeDom.setText('appNotices', '');
+        document.getElementById('appNotices').classList.add('hidden');
+    }
+
+    function renderAppError(error) {
+        const notice = {code: error.code, messageKey: error.messageKey};
+        appState.ui.notices = [notice];
+        TJL.safeDom.setText('appNotices', 'Laskenta epäonnistui. Tarkista syötteet ja yritä uudelleen.');
+        document.getElementById('appNotices').classList.remove('hidden');
+    }
+
+    function runUiAction(source, action, revision) {
+        const activeRevision = revision || TJL.beginInputRevision(appState);
+        try {
+            const value = action();
+            TJL.acceptResult(appState, activeRevision, value);
+            return value;
+        } catch (cause) {
+            const error = TJL.createAppError({
+                kind: 'internal-defect',
+                code: 'ERR-UI-ACTION-001',
+                source: source,
+                recoverable: true,
+                messageKey: 'calculation-failed',
+                cause: cause
+            });
+            clearCalculationOutputs();
+            TJL.rejectResult(appState, activeRevision, error);
+            renderAppError(error);
+            console.error(`[${error.code}] ${error.source}`);
+            return null;
+        }
+    }
+
     function calc() {
+        const revision = TJL.beginInputRevision(appState);
+        clearAppNotice();
+        return runUiAction('main-calculation', () => calculateCurrentInputs(), revision);
+    }
+
+    function calculateCurrentInputs() {
         const elev = parseFloat(document.getElementById('elev').value) || 0;
         let ground = 0;
 
@@ -255,10 +476,11 @@
                 const angle = (getRad(fov, document.getElementById('fovUnit').value) / res) * tPx;
                 const slant = (tReal / 2) / Math.tan(angle / 2);
                 ground = slant * Math.cos(toRad(elev));
-                document.getElementById('rGround').innerText = Math.abs(ground).toFixed(0) + " m";
+                TJL.safeDom.setText('rGround', Math.abs(ground).toFixed(0) + " m");
             } else {
-                document.getElementById('rGround').innerText = "---";
+                TJL.safeDom.setText('rGround', '---');
             }
+            TJL.safeDom.setText('rSize', '---');
         } 
         // MODE SIZE: Known dist input (e.g. from AR)
         else {
@@ -274,54 +496,52 @@
                     const angle = (getRad(fov, document.getElementById('fovUnit').value) / res) * tPx;
                     const slant = knownDist / Math.cos(toRad(elev));
                     const size = 2 * slant * Math.tan(angle / 2);
-                    document.getElementById('rSize').innerText = size.toFixed(2) + " m";
+                    TJL.safeDom.setText('rSize', size.toFixed(2) + " m");
                 } else {
-                    document.getElementById('rSize').innerText = "(Syötä optiikka)";
+                    TJL.safeDom.setText('rSize', '(Syötä optiikka)');
                 }
+            } else {
+                TJL.safeDom.setText('rSize', '---');
             }
+            TJL.safeDom.setText('rGround', '---');
         }
 
-        calcCoords(ground);
+        const coordinates = calcCoords(ground);
+        if (!ground) return null;
+        return {mode: mode, ground: ground, coordinates: coordinates};
     }
 
     function calcCoords(dist) {
-        if(!dist) { document.getElementById('rShift').innerText="---"; document.getElementById('rMgrs').innerText="---"; return; }
+        if(!dist) { TJL.safeDom.setText('rShift', '---'); TJL.safeDom.setText('rMgrs', '---'); return null; }
 
-        const latD=parseFloat(document.getElementById('latD').value), latM=parseFloat(document.getElementById('latM').value)||0, latS=parseFloat(document.getElementById('latS').value)||0;
-        const lonD=parseFloat(document.getElementById('lonD').value), lonM=parseFloat(document.getElementById('lonM').value)||0, lonS=parseFloat(document.getElementById('lonS').value)||0;
         const azVal=parseFloat(document.getElementById('azimuth').value);
 
-        if(!azVal) { document.getElementById('rShift').innerText="---"; document.getElementById('rMgrs').innerText="---"; return; }
+        if(!azVal) { TJL.safeDom.setText('rShift', '---'); TJL.safeDom.setText('rMgrs', '---'); return null; }
 
         const azRad = getRad(azVal, document.getElementById('azUnit').value);
         const dN = dist * Math.cos(azRad), dE = dist * Math.sin(azRad);
-        document.getElementById('rShift').innerText = `N: ${dN>0?'+':''}${dN.toFixed(0)}m  E: ${dE>0?'+':''}${dE.toFixed(0)}m`;
+        TJL.safeDom.setText('rShift', `N: ${dN>0?'+':''}${dN.toFixed(0)}m  E: ${dE>0?'+':''}${dE.toFixed(0)}m`);
 
-        if(!latD || !lonD) return;
-        const lat1 = toRad(latD + latM/60 + latS/3600);
-        const lon1 = toRad(lonD + lonM/60 + lonS/3600);
+        const observer = readObserverPosition();
+        if(!observer) { TJL.safeDom.setText('rMgrs', '---'); return {dN: dN, dE: dE, mgrs: null}; }
+        const lat1 = toRad(observer.latitude);
+        const lon1 = toRad(observer.longitude);
         const R = 6371000;
         const lat2 = Math.asin(Math.sin(lat1)*Math.cos(dist/R) + Math.cos(lat1)*Math.sin(dist/R)*Math.cos(azRad));
         const lon2 = lon1 + Math.atan2(Math.sin(azRad)*Math.sin(dist/R)*Math.cos(lat1), Math.cos(dist/R)-Math.sin(lat1)*Math.sin(lat2));
-        try {document.getElementById('rMgrs').innerText = forward(toDeg(lat2), toDeg(lon2));} catch(e) {document.getElementById('rMgrs').innerText = "Err";}
+        const mgrs = TJL.coordinates.wgs84ToMgrs(toDeg(lat2), toDeg(lon2));
+        TJL.safeDom.setText('rMgrs', mgrs);
+        return {dN: dN, dE: dE, mgrs: mgrs};
     }
 
-    // MGRS Logic (Same as before)
-    function forward(lat, lon) {if (lat < -80 || lat > 84) return "Polar region"; const ZONE = Math.floor((lon + 180) / 6) + 1; const N0 = lat >= 0 ? 0 : 10000000; const k0 = 0.9996; const a = 6378137.0; const f = 1 / 298.257223563; const b = a * (1 - f); const e = Math.sqrt(1 - (b * b) / (a * a)); const e1sq = e * e / (1 - e * e); const latRad = toRad(lat); const lonRad = toRad(lon); const lonOrigin = toRad((ZONE - 1) * 6 - 180 + 3); const N = a / Math.sqrt(1 - Math.pow(e * Math.sin(latRad), 2)); const T = Math.pow(Math.tan(latRad), 2); const C = e1sq * Math.pow(Math.cos(latRad), 2); const A = (lonRad - lonOrigin) * Math.cos(latRad); const M = a * ((1 - Math.pow(e, 2) / 4 - 3 * Math.pow(e, 4) / 64 - 5 * Math.pow(e, 6) / 256) * latRad - (3 * Math.pow(e, 2) / 8 + 3 * Math.pow(e, 4) / 32 + 45 * Math.pow(e, 6) / 1024) * Math.sin(2 * latRad) + (15 * Math.pow(e, 4) / 256 + 45 * Math.pow(e, 6) / 1024) * Math.sin(4 * latRad) - (35 * Math.pow(e, 6) / 3072) * Math.sin(6 * latRad)); const easting = k0 * N * (A + (1 - T + C) * Math.pow(A, 3) / 6 + (5 - 18 * T + T * T + 72 * C - 58 * e1sq) * Math.pow(A, 5) / 120) + 500000.0; const northing = k0 * (M + N * Math.tan(latRad) * (A * A / 2 + (5 - T + 9 * C + 4 * C * C) * Math.pow(A, 4) / 24 + (61 - 58 * T + T * T + 600 * C - 330 * e1sq) * Math.pow(A, 6) / 720)) + N0; return getMgrsString(ZONE, lat, easting, northing);}
-    function getMgrsString(zone, lat, e, n) {const letters = "CDEFGHJKLMNPQRSTUVWXX"; const latIndex = Math.floor((lat + 80) / 8); let gzd = letters[latIndex]; if(lat > 84) gzd = 'X'; const eStr = Math.floor(e % 100000).toString().padStart(5, '0'); const nStr = Math.floor(n % 100000).toString().padStart(5, '0'); const mgrs = `${zone}${gzd} ${get100kID(zone, e, n)} ${eStr} ${nStr}`; return mgrs;}
-    function get100kID(zone, easting, northing) {let set = zone % 6; if(set===0) set=6; const colBase = "ABCDEFGHJKLMNPQRSTUVWXYZ"; const rowBase = "ABCDEFGHJKLMNPQRSTUV"; let colBlock = Math.floor(easting / 100000); if(colBlock < 1 || colBlock > 8) return "XX"; let colIdx = (set - 1) * 8 + colBlock - 1; const colL = colBase[colIdx % 24]; let rowBlock = Math.floor(northing / 100000); let rowOffset = (set % 2 === 0) ? 5 : 0; let rowIdx = (rowOffset + rowBlock) % 20; const rowL = rowBase[rowIdx]; return colL + rowL;}
-
     // SENSORS & PROFILES (Shortened)
-    let wId=null; function toggleGPS(){const b=document.getElementById('btnGps'); if(wId){navigator.geolocation.clearWatch(wId);wId=null;b.classList.remove('active');} else{b.classList.add('active');wId=navigator.geolocation.watchPosition(p=>{const l=p.coords.latitude,n=p.coords.longitude;const lp=splitD(l),lo=splitD(n);document.getElementById('latD').value=lp.d;document.getElementById('latM').value=lp.m;document.getElementById('latS').value=lp.s;document.getElementById('lonD').value=lo.d;document.getElementById('lonM').value=lo.m;document.getElementById('lonS').value=lo.s;calc();},e=>{alert('GPS Err');toggleGPS();},{enableHighAccuracy:true});}}
+    async function toggleGPS(){const state=geolocationAdapter.capability();if(state.status==='active'||state.status==='starting')geolocationAdapter.stop();else await geolocationAdapter.start();}
     function splitD(d){const a=Math.abs(d),x=Math.floor(a),m=Math.floor((a-x)*60),s=((a-x-m/60)*3600).toFixed(1);return{d:x*(d<0?-1:1),m:m,s:s};}
-    let cAct=false; function toggleCompass(){const b=document.getElementById('btnCompass');if(cAct){window.removeEventListener('deviceorientation',hOr);cAct=false;b.classList.remove('active');}else{if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){DeviceOrientationEvent.requestPermission().then(r=>{if(r==='granted')sC(b);});}else sC(b);}}
-    function sC(b){window.addEventListener('deviceorientation',hOr);cAct=true;b.classList.add('active');}
-    function hOr(e){let h=e.webkitCompassHeading||(e.alpha?360-e.alpha:0);if(h){if(h<0)h+=360;if(h>=360)h-=360;const u=document.getElementById('azUnit').value;let v=h;if(u==='mil')v=h*(6400/360);if(u==='piiru')v=h*(6000/360);document.getElementById('azimuth').value=Math.round(v);calc();}}
-    let profs=JSON.parse(localStorage.getItem('tj_profs_v2')||'{}');
+    async function toggleCompass(){const state=orientationAdapter.capability();if(state.status==='active'||state.status==='starting')orientationAdapter.stop();else await orientationAdapter.start({requestPermission:true});}
     function loadProfile(){const p=profs[document.getElementById('profileSelector').value];if(p){document.getElementById('fov').value=p.f;document.getElementById('res').value=p.r;document.getElementById('fovUnit').value=p.u;calc();}}
-    function saveProfile(){const n=prompt("Nimi?");if(!n)return;profs[n]={f:document.getElementById('fov').value,r:document.getElementById('res').value,u:document.getElementById('fovUnit').value};localStorage.setItem('tj_profs_v2',JSON.stringify(profs));uSel();}
-    function deleteProfile(){const n=document.getElementById('profileSelector').value;if(profs[n]){delete profs[n];localStorage.setItem('tj_profs_v2',JSON.stringify(profs));uSel();}}
-    function uSel(){const s=document.getElementById('profileSelector');s.innerHTML='<option value="">-- Valitse Profiili --</option>';for(let k in profs){let o=document.createElement('option');o.value=k;o.text=k;s.add(o);}}
+    function saveProfile(){const n=prompt("Nimi?");if(!n)return;const nextProfiles=Object.assign({},profs,{[n]:{f:document.getElementById('fov').value,r:document.getElementById('res').value,u:document.getElementById('fovUnit').value}});if(persistenceRepository.saveProfiles(nextProfiles).ok){profs=nextProfiles;appState.profiles=profs;uSel();}renderPersistenceWarnings();}
+    function deleteProfile(){const n=document.getElementById('profileSelector').value;if(profs[n]){const nextProfiles=Object.assign({},profs);delete nextProfiles[n];if(persistenceRepository.saveProfiles(nextProfiles).ok){profs=nextProfiles;appState.profiles=profs;uSel();}renderPersistenceWarnings();}}
+    function uSel(){const s=TJL.safeDom.empty('profileSelector');TJL.safeDom.appendOption(s,{value:'',text:'-- Valitse Profiili --'});for(let k in profs){TJL.safeDom.appendOption(s,{value:k,text:k});}}
 </script>
 </body>
 </html>

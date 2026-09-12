@@ -1,4 +1,4 @@
-name: P2.1 software evidence
+name: Phase 2 software evidence
 
 on:
   pull_request:
@@ -59,14 +59,14 @@ jobs:
       - name: Run accepted browser harness requirements
         run: pnpm run test:browser:target
 
-      - name: Run PWA characterization evidence
+      - name: Run PWA lifecycle acceptance evidence
         run: pnpm run test:pwa
 
       - name: Preserve diagnostics on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: p2-1-playwright-diagnostics
+          name: phase-2-playwright-diagnostics
           path: |
             playwright-report/
             test-results/
