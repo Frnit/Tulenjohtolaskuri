@@ -48,6 +48,13 @@
         return Number.isFinite(Number(value.arFov)) && Number(value.arFov) > 0;
     }
 
+    function validHandoff(value) {
+        return isRecord(value) &&
+            Number.isFinite(value.distance) && value.distance > 0 &&
+            Number.isFinite(value.elevation) &&
+            value.elevation >= -89 && value.elevation <= 89;
+    }
+
     function validMeta(value) {
         return isRecord(value) &&
             value.storageSchemaVersion === SCHEMA_VERSION &&
@@ -95,15 +102,15 @@
             return result;
         }
 
-        function writeVerified(key, data, validate) {
+        function writeVerified(adapter, key, data, validate) {
             const serialized = JSON.stringify(envelope(data, now));
-            const written = local.set(key, serialized);
+            const written = adapter.set(key, serialized);
             if (!written.ok) {
                 warn('STORAGE_WRITE_FAILED', key, 'Tietoa ei voitu tallentaa.', written.error);
                 return { ok: false, warnings: warnings.slice() };
             }
 
-            const readBack = local.get(key);
+            const readBack = adapter.get(key);
             if (!readBack.ok) {
                 warn('STORAGE_VERIFY_FAILED', key, 'Tallennuksen varmistus epäonnistui.', readBack.error);
                 return { ok: false, warnings: warnings.slice() };
@@ -125,8 +132,8 @@
                 validate(value.data);
         }
 
-        function readCurrent(key, validate) {
-            const stored = read(local, key);
+        function readCurrent(adapter, key, validate) {
+            const stored = read(adapter, key);
             if (!stored.ok || stored.value === null) return { status: 'missing' };
 
             const parsed = parse(stored.value, key);
@@ -155,21 +162,21 @@
         }
 
         function migrateJson(kind, fallback, validate) {
-            const current = readCurrent(KEYS[kind], validate);
+            const current = readCurrent(local, KEYS[kind], validate);
             if (current.status === 'ready') return current.value;
             if (current.status !== 'missing') return clone(fallback);
 
             const legacy = readLegacyJson(LEGACY_KEYS[kind], validate);
             if (legacy.status !== 'ready') return clone(fallback);
 
-            if (writeVerified(KEYS[kind], legacy.value, validate).ok) {
+            if (writeVerified(local, KEYS[kind], legacy.value, validate).ok) {
                 migratedLegacyKeys.push(LEGACY_KEYS[kind]);
             }
             return legacy.value;
         }
 
         function loadSettings() {
-            const current = readCurrent(KEYS.settings, validSettings);
+            const current = readCurrent(local, KEYS.settings, validSettings);
             if (current.status === 'ready') return current.value;
             if (current.status !== 'missing') return {};
 
@@ -181,7 +188,7 @@
                 return {};
             }
             const settings = { arFov };
-            if (writeVerified(KEYS.settings, settings, validSettings).ok) {
+            if (writeVerified(local, KEYS.settings, settings, validSettings).ok) {
                 migratedLegacyKeys.push(LEGACY_KEYS.arFov);
             }
             return settings;
@@ -189,10 +196,10 @@
 
         function updateMigrationMeta() {
             if (!migratedLegacyKeys.length) return;
-            const current = readCurrent(KEYS.meta, validMeta);
+            const current = readCurrent(local, KEYS.meta, validMeta);
             if (current.status !== 'missing' && current.status !== 'ready') return;
             const previous = current.status === 'ready' ? current.value.migratedLegacyKeys : [];
-            writeVerified(KEYS.meta, {
+            writeVerified(local, KEYS.meta, {
                 storageSchemaVersion: SCHEMA_VERSION,
                 migratedLegacyKeys: Array.from(new Set(previous.concat(migratedLegacyKeys)))
             }, validMeta);
@@ -224,18 +231,32 @@
             loadAll,
             saveTargets(data) {
                 return validTargets(data)
-                    ? writeVerified(KEYS.targets, data, validTargets)
+                    ? writeVerified(local, KEYS.targets, data, validTargets)
                     : { ok: false, warnings: warnings.slice() };
             },
             saveProfiles(data) {
                 return validProfiles(data)
-                    ? writeVerified(KEYS.profiles, data, validProfiles)
+                    ? writeVerified(local, KEYS.profiles, data, validProfiles)
                     : { ok: false, warnings: warnings.slice() };
             },
             saveSettings(data) {
                 return validSettings(data)
-                    ? writeVerified(KEYS.settings, data, validSettings)
+                    ? writeVerified(local, KEYS.settings, data, validSettings)
                     : { ok: false, warnings: warnings.slice() };
+            },
+            readArHandoff() {
+                const result = readCurrent(session, KEYS.handoff, validHandoff);
+                return result.status === 'ready' ? result.value : null;
+            },
+            writeArHandoff(data) {
+                return validHandoff(data)
+                    ? writeVerified(session, KEYS.handoff, data, validHandoff)
+                    : { ok: false, warnings: warnings.slice() };
+            },
+            removeArHandoff() {
+                const result = session.remove(KEYS.handoff);
+                if (!result.ok) warn('STORAGE_REMOVE_FAILED', KEYS.handoff, 'AR-siirtotietoa ei voitu poistaa.', result.error);
+                return result;
             },
             readLegacyIncomingDistance() {
                 const result = read(local, LEGACY_KEYS.incomingDistance);

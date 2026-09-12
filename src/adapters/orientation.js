@@ -47,12 +47,21 @@
             let heading = Number.isFinite(event.webkitCompassHeading)
                 ? event.webkitCompassHeading
                 : (Number.isFinite(event.alpha) ? 360 - event.alpha : null);
-            if (heading === null) return;
-            heading = ((heading % 360) + 360) % 360;
+            if (heading !== null) heading = ((heading % 360) + 360) % 360;
+
+            let elevation = null;
+            if (Number.isFinite(event.beta) && Number.isFinite(event.gamma)) {
+                const beta = event.beta * (Math.PI / 180);
+                const gamma = event.gamma * (Math.PI / 180);
+                const rearCameraVertical = Math.max(-1, Math.min(1, -Math.cos(beta) * Math.cos(gamma)));
+                elevation = Math.asin(rearCameraVertical) * (180 / Math.PI);
+            }
+
+            if (heading === null && elevation === null) return;
             publish({
                 permission: 'granted',
                 status: 'active',
-                value: {headingDegrees: heading},
+                value: {headingDegrees: heading, elevationDegrees: elevation},
                 observedAt: new Date().toISOString(),
                 error: null
             });

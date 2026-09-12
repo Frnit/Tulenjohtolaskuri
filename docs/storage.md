@@ -12,7 +12,7 @@ Storage operations directly.
 | `tjl.targets` | LocalStorage | Versioned target collection |
 | `tjl.profiles` | LocalStorage | Versioned sensor profiles |
 | `tjl.settings` | LocalStorage | Versioned UI and AR settings |
-| `tjl.handoff` | SessionStorage | Reserved for the P2.8 AR handoff contract |
+| `tjl.handoff` | SessionStorage | Versioned, consume-once AR distance and elevation handoff |
 
 Persistent v1 records use this envelope:
 
@@ -36,9 +36,10 @@ is parsed, validated, converted in memory, written to its corresponding `tjl.*` 
 read back, and validated again. Migration is idempotent and independent per record.
 Legacy source keys remain unchanged for rollback and later cleanup decisions.
 
-`tj_incoming_dist` remains the compatibility handoff until P2.8 defines its
-versioned, consume-once SessionStorage envelope. P2.3 routes its reads and writes
-through the same adapter without changing its accepted behavior.
+`tjl.handoff` carries a positive line-of-sight distance and an elevation from −89
+to +89 degrees. Main consumes and removes the envelope when it opens the size
+workflow. `tj_incoming_dist` is written in parallel for compatibility with the
+previous scalar handoff and is removed at the same time.
 
 Corrupt legacy values are not overwritten. If a migration write, read, or quota
 check fails, valid legacy data remains usable for the current session and the page

@@ -267,7 +267,7 @@
     orientationAdapter.subscribe(state => {
         appState.sensors.orientation = state;
         renderMainSensorState('orientation', state);
-        if (!state.value) return;
+        if (!state.value || !Number.isFinite(state.value.headingDegrees)) return;
         const heading = state.value.headingDegrees;
         const unit = document.getElementById('azUnit').value;
         let value = heading;
@@ -295,15 +295,16 @@
     window.onload = function() {
         initTargets();
         uSel();
-        renderPersistenceWarnings();
-        
         // CHECK FOR AR RESULT
-        const incoming = persistenceRepository.readLegacyIncomingDistance();
+        const handoff = persistenceRepository.readArHandoff();
+        const incoming = handoff ? handoff.distance : persistenceRepository.readLegacyIncomingDistance();
         if (incoming) {
             // Found data from AR!
             console.log("Loaded from AR:", incoming);
             setTab('size'); // Switch to Size tab (which uses Known Dist)
             document.getElementById('knownDist').value = incoming;
+            if (handoff) document.getElementById('elev').value = handoff.elevation;
+            if (handoff) persistenceRepository.removeArHandoff();
             persistenceRepository.removeLegacyIncomingDistance(); // Clear it
             
             // Optional: Scroll to result
@@ -314,6 +315,7 @@
         } else {
             calc();
         }
+        renderPersistenceWarnings();
     };
 
     function resetAll() {

@@ -127,8 +127,19 @@ test('ACC-SENSOR-LIFECYCLE-001 orientation requests permission only after an exp
 
   assert.equal((await adapter.start({requestPermission: true})).ok, true);
   assert.equal(permissionRequests, 1);
-  sensorListeners.get('deviceorientation')({alpha: 90});
+  sensorListeners.get('deviceorientation')({alpha: 90, beta: 90, gamma: 0});
   assert.equal(adapter.capability().value.headingDegrees, 270);
+  assert.ok(Math.abs(adapter.capability().value.elevationDegrees) < 0.000001);
+
+  sensorListeners.get('deviceorientation')({alpha: 90, beta: 120, gamma: 0});
+  assert.ok(Math.abs(adapter.capability().value.elevationDegrees - 30) < 0.000001);
+
+  sensorListeners.get('deviceorientation')({alpha: 90, beta: 60, gamma: 0});
+  assert.ok(Math.abs(adapter.capability().value.elevationDegrees + 30) < 0.000001);
+
+  sensorListeners.get('deviceorientation')({beta: 120, gamma: 0});
+  assert.equal(adapter.capability().value.headingDegrees, null);
+  assert.ok(Math.abs(adapter.capability().value.elevationDegrees - 30) < 0.000001);
   adapter.stop();
   assert.equal(sensorListeners.has('deviceorientation'), false);
 });

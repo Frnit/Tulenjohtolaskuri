@@ -28,7 +28,7 @@
         #bracketBox {
             border: 2px solid #0f0; box-shadow: 0 0 10px rgba(0, 255, 0, 0.4);
             width: 50%; height: 50%; position: absolute;
-            transition: width 0.05s, height 0.05s;
+            transition: width 0.05s, height 0.05s, transform 0.1s;
         }
         #bracketBox::after { content: '+'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #0f0; font-size: 20px; }
         #bracketBox::before { 
@@ -37,7 +37,7 @@
         }
 
         /* Result Area */
-        .result-display { position: absolute; bottom: 25%; width: 100%; text-align: center; text-shadow: 0 2px 4px #000; pointer-events: auto; }
+        .result-display { position: relative; flex: none; width: 100%; padding: 4px 0; text-align: center; text-shadow: 0 2px 4px #000; pointer-events: auto; }
         .dist-val { font-size: 3.5rem; font-weight: bold; color: #0f0; }
         .dist-unit { font-size: 1rem; color: #ccc; }
         
@@ -50,11 +50,19 @@
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(0, 255, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0); } }
 
         /* Bottom Controls */
-        .controls { background: rgba(0,0,0,0.7); padding: 15px; pointer-events: auto; border-top: 1px solid #0f0; }
+        .controls { background: rgba(0,0,0,0.7); padding: 8px 15px; pointer-events: auto; border-top: 1px solid #0f0; }
         input[type=range] { width: 100%; margin: 10px 0; accent-color: #0f0; }
         .action-row { display: flex; gap: 10px; justify-content: center; margin-top: 5px; }
         .act-btn { padding: 8px 15px; border-radius: 4px; border: 1px solid #555; background: #222; color: #ccc; cursor: pointer; }
         .act-btn.active { background: #0f0; color: #000; }
+        .orientation-pad { display: grid; grid-template-columns: repeat(3, minmax(62px, 1fr)); grid-template-rows: repeat(3, 34px); gap: 4px; max-width: 330px; margin: 5px auto 8px; }
+        .orientation-btn { padding: 4px; min-width: 0; font-size: 0.72rem; cursor: pointer; }
+        .orientation-up { grid-column: 2; grid-row: 1; }
+        .orientation-left { grid-column: 1; grid-row: 2; }
+        .orientation-reset { grid-column: 2; grid-row: 2; font-size: 0.66rem; }
+        .orientation-right { grid-column: 3; grid-row: 2; }
+        .orientation-down { grid-column: 2; grid-row: 3; }
+        .orientation-status { text-align: center; color: #fff; font-size: 0.72rem; min-height: 1em; }
 
         /* Modal */
         #calibModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 100; padding: 20px; box-sizing: border-box; pointer-events: auto;}
@@ -84,6 +92,7 @@
         </div>
         <div class="sensor-data" style="text-align:right;">
             <div>SUUNTA: <span id="hudAz" class="sensor-val">---</span> MIL</div>
+            <div>KORO: <span id="hudElev" class="sensor-val">0</span>°</div>
             <div style="font-size:0.7rem; color:#aaa;" id="hudGps">GPS: ODOTTAA...</div>
             <div style="font-size:0.7rem; color:#aaa;" id="fovDisplay">FOV: --°</div>
         </div>
@@ -107,6 +116,15 @@
         </div>
         
         <input type="range" id="sizeSlider" min="10" max="900" value="300" oninput="updateBox()">
+
+        <div class="orientation-pad" aria-label="Mittauskehyksen suuntaus">
+            <button class="orientation-btn orientation-up" type="button" onclick="adjustElevation(1)" aria-label="Nosta korkokulmaa yksi aste">↑ KORO +1°</button>
+            <button class="orientation-btn orientation-left" type="button" onclick="adjustFrameRotation(-5)" aria-label="Kierrä kehystä viisi astetta vastapäivään">↶ −5°</button>
+            <button class="orientation-btn orientation-reset" type="button" onclick="resetOrientation()">NOLLAA</button>
+            <button class="orientation-btn orientation-right" type="button" onclick="adjustFrameRotation(5)" aria-label="Kierrä kehystä viisi astetta myötäpäivään">+5° ↷</button>
+            <button class="orientation-btn orientation-down" type="button" onclick="adjustElevation(-1)" aria-label="Laske korkokulmaa yksi aste">↓ KORO −1°</button>
+        </div>
+        <div id="orientationStatus" class="orientation-status" role="status">KIERTO 0° · KORO 0°</div>
         
         <div class="action-row">
             <button class="act-btn" id="btnSensors" onclick="startArSensors(true)">KÄYNNISTÄ SENSORIT</button>
@@ -161,6 +179,9 @@
     let fovDeg = Number(appState.settings.arFov) || 70.0;
     let isFrozen = false;
     let currentDist = 0;
+    let frameRotationDegrees = 0;
+    let elevationOffsetDegrees = 0;
+    let sensorElevationDegrees = null;
 
     // --- INIT ---
     window.onload = function() {
@@ -169,6 +190,7 @@
         renderPersistenceWarnings();
         updateFovDisplay();
         updateBox();
+        renderOrientation();
     };
 
     // --- SHARED LIBRARY LOGIC ---
@@ -245,8 +267,11 @@
 
     orientationAdapter.subscribe(state => {
         appState.sensors.orientation = state;
-        if (state.value) TJL.safeDom.setText('hudAz', Math.round(state.value.headingDegrees * (6400 / 360)));
-        else TJL.safeDom.setText('hudAz', '---');
+        const heading = state.value && state.value.headingDegrees;
+        const elevation = state.value && state.value.elevationDegrees;
+        TJL.safeDom.setText('hudAz', Number.isFinite(heading) ? Math.round(heading * (6400 / 360)) : '---');
+        sensorElevationDegrees = Number.isFinite(elevation) ? elevation : null;
+        renderOrientation();
         renderArSensorStatus();
     });
 
@@ -290,6 +315,43 @@
         calculate();
     }
 
+    function clamp(value, minimum, maximum) {
+        return Math.max(minimum, Math.min(maximum, value));
+    }
+
+    function effectiveElevation() {
+        return clamp((sensorElevationDegrees || 0) + elevationOffsetDegrees, -89, 89);
+    }
+
+    function signedDegrees(value) {
+        const rounded = Math.round(value);
+        return `${rounded > 0 ? '+' : ''}${rounded}°`;
+    }
+
+    function renderOrientation() {
+        document.getElementById('bracketBox').style.transform = `rotate(${frameRotationDegrees}deg)`;
+        const elevation = effectiveElevation();
+        TJL.safeDom.setText('hudElev', Math.round(elevation));
+        TJL.safeDom.setText('orientationStatus', `KIERTO ${signedDegrees(frameRotationDegrees)} · KORO ${signedDegrees(elevation)}`);
+    }
+
+    function adjustFrameRotation(delta) {
+        frameRotationDegrees = clamp(frameRotationDegrees + delta, -90, 90);
+        renderOrientation();
+    }
+
+    function adjustElevation(delta) {
+        const base = sensorElevationDegrees || 0;
+        elevationOffsetDegrees = clamp(elevationOffsetDegrees + delta, -89 - base, 89 - base);
+        renderOrientation();
+    }
+
+    function resetOrientation() {
+        frameRotationDegrees = 0;
+        elevationOffsetDegrees = 0;
+        renderOrientation();
+    }
+
     function calculate() {
         const boxPx = parseInt(document.getElementById('sizeSlider').value);
         const screenPx = window.innerWidth;
@@ -303,7 +365,16 @@
     // --- LOOP-BACK TO INDEX ---
     function useResult() {
         if(currentDist > 0) {
-            // Save to shared storage
+            const handoff = persistenceRepository.writeArHandoff({
+                distance: currentDist,
+                elevation: effectiveElevation()
+            });
+            if (!handoff.ok) {
+                renderPersistenceWarnings();
+                return;
+            }
+
+            // Keep the scalar distance during the compatibility period.
             const result = persistenceRepository.writeLegacyIncomingDistance(currentDist);
             if (!result.ok) {
                 renderPersistenceWarnings();
