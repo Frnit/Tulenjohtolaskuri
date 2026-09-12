@@ -100,6 +100,7 @@
     </div>
 
     <div class="controls">
+        <label for="targetSelect" style="display:block; margin-bottom:4px; font-size:0.7rem; color:#bbb;">Esimerkkimaali ja sovitettava ulottuvuus</label>
         <div style="display:flex; gap:10px; margin-bottom:5px;">
             <select id="targetSelect" onchange="updateTarget()" style="flex:1;"></select>
             <button onclick="openCalib()">⚙</button>
@@ -136,11 +137,12 @@
 <script src="src/adapters/camera.js"></script>
 <script src="src/app/state.js"></script>
 <script src="src/ui/safe-dom.js"></script>
+<script src="src/domain/targets.js"></script>
 <script src="src/pwa/release.js"></script>
 <script src="src/pwa/client.js"></script>
 <script>
     // --- STATE ---
-    const defaultTargets = [{n:"Mies (0.5m)",s:0.5}, {n:"Mies (1.8m)",s:1.8}, {n:"BTR (2.9m)",s:2.9}, {n:"Auto (1.8m)",s:1.8}];
+    const defaultTargets = TJL.targetCatalog.copyExamples('ar');
     const persistenceRepository = TJL.createPersistenceRepository({
         local: TJL.createStorageAdapter(() => window.localStorage),
         session: TJL.createStorageAdapter(() => window.sessionStorage)
@@ -190,7 +192,10 @@
         const sel = document.getElementById('targetSelect');
         TJL.safeDom.empty(sel);
         targets.forEach(t => {
-            TJL.safeDom.appendOption(sel, {value: t.s, text: `${t.n} (${t.s}m)`});
+            TJL.safeDom.appendOption(sel, {
+                value: t.s,
+                text: TJL.targetCatalog.label(t, 'ar')
+            });
         });
         
         if (!sel.options.length) {

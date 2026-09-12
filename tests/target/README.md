@@ -24,3 +24,7 @@ P2.6 PWA targets verify release-metadata consistency, explicit waiting-worker
 activation, complete offline-Core installation, cache ownership, manifest scope
 and visible update/offline status. Browser lifecycle scenarios remain in
 `tests/pwa` so they run once in the dedicated single-worker PWA stage.
+
+`REQ-EXAMPLE-SIZE-LABELS-001` verifies that every built-in target example names
+its measured dimension, metre value and the calculation workflow that consumes
+that value on both the main and AR pages.

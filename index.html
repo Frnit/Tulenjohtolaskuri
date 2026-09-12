@@ -117,13 +117,13 @@
         <div id="viewDist">
             <div class="row">
                 <div class="col" style="flex: 2.5;">
-                    <label>Maali (m)</label>
+                    <label>Esimerkkimaali ja mitattu ulottuvuus</label>
                     <div style="display:flex; gap:5px;">
                         <select id="targetSelect" onchange="applyTarget()" style="flex:1;"><option value="" disabled selected>▾</option></select>
                         <button onclick="openTargetManager()" style="background:#333; border:1px solid #444; color:#fff; border-radius:4px;">⚙</button>
                     </div>
                 </div>
-                <div class="col" style="flex: 1.5;"><label>Koko (m)</label><input type="number" id="tReal" placeholder="m" oninput="calc()"></div>
+                <div class="col" style="flex: 1.5;"><label>Valittu ulottuvuus (m)</label><input type="number" id="tReal" placeholder="m" oninput="calc()"></div>
             </div>
             
             <div class="row">
@@ -132,7 +132,7 @@
                 <div class="col" style="flex:1.5;"><label>Px</label><input type="number" id="res" value="1920" oninput="calc()"></div>
             </div>
             <div class="row">
-                <div class="col" style="flex: 1.5;"><label>Maali px</label><input type="number" id="tPx" placeholder="px" oninput="calc()"></div>
+                <div class="col" style="flex: 1.5;"><label>Sama ulottuvuus (px)</label><input type="number" id="tPx" placeholder="px" oninput="calc()"></div>
             </div>
         </div>
 
@@ -193,6 +193,7 @@
 <script src="src/adapters/orientation.js"></script>
 <script src="src/app/state.js"></script>
 <script src="src/ui/safe-dom.js"></script>
+<script src="src/domain/targets.js"></script>
 <script src="src/pwa/release.js"></script>
 <script src="src/pwa/client.js"></script>
 <script>
@@ -204,7 +205,7 @@
     pwaClient.register();
 
     let mode = 'dist';
-    const defaultTargets = [{n:"Mies (0.5m)",s:0.5},{n:"Mies (1.8m)",s:1.8},{n:"BTR / Pas",s:2.9},{n:"Kuorma-auto",s:2.5}];
+    const defaultTargets = TJL.targetCatalog.copyExamples('distance');
     const persistenceRepository = TJL.createPersistenceRepository({
         local: TJL.createStorageAdapter(() => window.localStorage),
         session: TJL.createStorageAdapter(() => window.sessionStorage)
@@ -318,9 +319,15 @@
     function initTargets() {
         const sel = TJL.safeDom.empty('targetSelect');
         TJL.safeDom.appendOption(sel, {value: '', text: '▾ Valitse', disabled: true, selected: true});
-        targets.forEach(t => TJL.safeDom.appendOption(sel, {value: t.s, text: t.n}));
+        targets.forEach(t => TJL.safeDom.appendOption(sel, {
+            value: t.s,
+            text: TJL.targetCatalog.label(t, 'distance')
+        }));
         const list = TJL.safeDom.empty('targetList');
-        targets.forEach((target, index) => TJL.safeDom.appendTargetItem(list, target, index, delT));
+        targets.forEach((target, index) => TJL.safeDom.appendTargetItem(list, {
+            ...target,
+            n: TJL.targetCatalog.label(target, 'distance')
+        }, index, delT));
     }
     function addTarget(){const n=document.getElementById('newTgtName').value, s=parseFloat(document.getElementById('newTgtSize').value);if(n&&s){const nextTargets=targets.concat({n:n,s:s});if(persistenceRepository.saveTargets(nextTargets).ok){targets=nextTargets;appState.targets=targets;initTargets();}renderPersistenceWarnings();}}
     function delT(i){if(confirm('Poista?')){const nextTargets=targets.filter((_,index)=>index!==i);if(persistenceRepository.saveTargets(nextTargets).ok){targets=nextTargets;appState.targets=targets;initTargets();}renderPersistenceWarnings();}}
