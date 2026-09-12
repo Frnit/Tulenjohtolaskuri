@@ -22,16 +22,16 @@
         './src/domain/coordinates.js',
         './src/ui/safe-dom.js'
     ]);
-    const swBuildId = '0.3.0-rc.1-build.3';
+    const swBuildId = '0.3.0-build.1';
     const release = Object.freeze({
-        releaseVersion: '0.3.0-rc.1',
-        commitSha: null,
-        appVersion: '0.3.0-rc.1',
+        releaseVersion: '0.3.0',
+        commitSha: '8c4ab22048662aef5605f4dd79705ab36fd1328f',
+        appVersion: '0.3.0',
         swBuildId,
         cacheName: `tjl-core-${swBuildId}`,
         assetManifestVersion: '3',
         storageSchemaVersion: 1,
-        rollbackTarget: null,
+        rollbackTarget: '5a5f78daa400e4dee6252c236735b8a037e46289',
         assets
     });
 
