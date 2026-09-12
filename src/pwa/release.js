@@ -18,16 +18,17 @@
         './src/persistence/repository.js',
         './src/app/errors.js',
         './src/app/state.js',
+        './src/domain/targets.js',
         './src/ui/safe-dom.js'
     ]);
-    const swBuildId = '0.3.0-rc.1-build.1';
+    const swBuildId = '0.3.0-rc.1-build.2';
     const release = Object.freeze({
         releaseVersion: '0.3.0-rc.1',
         commitSha: null,
         appVersion: '0.3.0-rc.1',
         swBuildId,
         cacheName: `tjl-core-${swBuildId}`,
-        assetManifestVersion: '1',
+        assetManifestVersion: '2',
         storageSchemaVersion: 1,
         rollbackTarget: null,
         assets
