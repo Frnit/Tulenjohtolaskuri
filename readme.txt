@@ -27,7 +27,10 @@ Käyttö:
 2. Asennus puhelimeen:
    - Android (Chrome): Valikko -> "Asenna sovellus" tai "Lisää aloitusnäytölle".
    - iOS (Safari): Jaa-painike -> "Lisää Koti-valikkoon".
-3. Offline: Kun sovellus on kerran ladattu, se toimii ilman verkkoyhteyttä.
+3. Offline: Odota, että sovellus näyttää tilan "OFFLINE: VALMIS". Sen jälkeen
+   manuaaliset työnkulut ja AR-käyttöliittymä toimivat ilman verkkoyhteyttä.
+   Kamera ja suunta-anturi vaativat laitteen tuen ja luvan. Uuden GPS-sijainnin
+   saatavuutta ilman verkkoyhteyttä ei luvata.
 
 3. LASKENTATILAT (VÄLILEHDET)
 -----------------------------

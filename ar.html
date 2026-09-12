@@ -62,6 +62,8 @@
         .modal-content input { padding: 10px; width: 80px; text-align: center; font-size: 1.2rem; margin: 10px; background: #333; color: #fff; border: 1px solid #555; }
         .persistence-warning { position: fixed; top: 60px; left: 10px; right: 10px; z-index: 30; padding: 8px; border: 1px solid #f39c12; border-radius: 4px; background: rgba(58,43,18,0.95); color: #ffd27f; font: 0.75rem sans-serif; pointer-events: auto; }
         .sensor-status { position: fixed; top: 105px; left: 10px; right: 10px; z-index: 30; padding: 8px; border: 1px solid #f39c12; border-radius: 4px; background: rgba(58,43,18,0.95); color: #ffd27f; font: 0.75rem sans-serif; pointer-events: auto; }
+        .pwa-status { position: fixed; top: 72px; left: 50%; z-index: 40; transform: translateX(-50%); padding: 5px 7px; border: 1px solid #496849; border-radius: 4px; background: rgba(0,20,0,0.92); color: #b8e8b8; font: 0.64rem sans-serif; white-space: nowrap; pointer-events: auto; }
+        .pwa-update-btn { margin-left: 5px; padding: 3px 5px; border-color: #ffd27f; background: #302410; color: #ffd27f; font-size: 0.64rem; cursor: pointer; }
         .hidden { display: none; }
     </style>
 </head>
@@ -70,6 +72,10 @@
 <div id="camContainer"><video id="video" autoplay playsinline></video></div>
 <div id="persistenceWarnings" class="persistence-warning hidden" role="status"></div>
 <div id="sensorStatus" class="sensor-status hidden" role="status"></div>
+<div class="pwa-status" role="status">
+    <span id="pwaStatusText">OFFLINE: TARKISTETAAN</span>
+    <button id="pwaUpdateButton" class="pwa-update-btn" type="button" hidden>OTA KÄYTTÖÖN</button>
+</div>
 
 <div id="uiLayer">
     <div class="hud-top">
@@ -130,6 +136,8 @@
 <script src="src/adapters/camera.js"></script>
 <script src="src/app/state.js"></script>
 <script src="src/ui/safe-dom.js"></script>
+<script src="src/pwa/release.js"></script>
+<script src="src/pwa/client.js"></script>
 <script>
     // --- STATE ---
     const defaultTargets = [{n:"Mies (0.5m)",s:0.5}, {n:"Mies (1.8m)",s:1.8}, {n:"BTR (2.9m)",s:2.9}, {n:"Auto (1.8m)",s:1.8}];
@@ -141,6 +149,12 @@
     const cameraAdapter = TJL.createCameraAdapter({video: document.getElementById('video')});
     const geolocationAdapter = TJL.createGeolocationAdapter();
     const orientationAdapter = TJL.createOrientationAdapter();
+    const pwaClient = TJL.createPwaClient();
+    TJL.bindPwaStatus(pwaClient, {
+        statusElement: document.getElementById('pwaStatusText'),
+        updateButton: document.getElementById('pwaUpdateButton')
+    });
+    pwaClient.register();
     let targetSize = 2.3; 
     let fovDeg = Number(appState.settings.arFov) || 70.0;
     let isFrozen = false;
