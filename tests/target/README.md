@@ -28,3 +28,6 @@ and visible update/offline status. Browser lifecycle scenarios remain in
 `REQ-EXAMPLE-SIZE-LABELS-001` verifies that every built-in target example names
 its measured dimension, metre value and the calculation workflow that consumes
 that value on both the main and AR pages.
+
+`ACC-POSITION-INPUT-001` verifies the WGS84/MGRS own-position contract with
+published conversion vectors and browser workflow coverage.
