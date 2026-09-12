@@ -59,7 +59,7 @@ jobs:
       - name: Run accepted browser harness requirements
         run: pnpm run test:browser:target
 
-      - name: Run PWA characterization evidence
+      - name: Run PWA lifecycle acceptance evidence
         run: pnpm run test:pwa
 
       - name: Preserve diagnostics on failure

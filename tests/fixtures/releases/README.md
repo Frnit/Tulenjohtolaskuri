@@ -1,6 +1,6 @@
 # Release fixtures
 
-P2.1 uses the checked-out baseline as the only served release. Future PWA work
-may add self-contained `v1` and `v2` fixture roots here for waiting-worker,
-failed-precache, open-tab, and rollback scenarios. The test server accepts a
-different `--root` without requiring another server dependency.
+P2.6 creates disposable release roots during the Playwright run. Each root uses
+the production worker and PWA client with deterministic V1, V2, failed-update
+and rollback metadata. This keeps generated cache content out of Git while the
+checked-in test defines the complete fixture contract.

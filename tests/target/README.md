@@ -19,3 +19,8 @@ failure does not stop unrelated controls.
 P2.5 browser-adapter targets verify missing and denied sensor fallbacks, explicit
 orientation permission, camera freeze versus release, and resource cleanup on
 `pagehide`.
+
+P2.6 PWA targets verify release-metadata consistency, explicit waiting-worker
+activation, complete offline-Core installation, cache ownership, manifest scope
+and visible update/offline status. Browser lifecycle scenarios remain in
+`tests/pwa` so they run once in the dedicated single-worker PWA stage.
