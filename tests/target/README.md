@@ -31,3 +31,8 @@ that value on both the main and AR pages.
 
 `ACC-POSITION-INPUT-001` verifies the WGS84/MGRS own-position contract with
 published conversion vectors and browser workflow coverage.
+
+`ACC-AR-ORIENTATION-001`, `ACC-AR-ELEVATION-001` and `ACC-AR-HANDOFF-002`
+verify the bounded two-axis AR control, sensor-based elevation with manual
+correction, and one-time transfer of both line-of-sight distance and elevation
+to the main size workflow.
