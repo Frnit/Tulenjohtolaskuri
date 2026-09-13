@@ -66,13 +66,22 @@
 
         /* Modal */
         #calibModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 100; padding: 20px; box-sizing: border-box; pointer-events: auto;}
+        #cameraDiagnosticsModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 100; padding: 20px; box-sizing: border-box; pointer-events: auto; overflow-y: auto; }
         .modal-content { color: #fff; text-align: center; margin-top: 20%; font-family: sans-serif; }
         .modal-content input { padding: 10px; width: 80px; text-align: center; font-size: 1.2rem; margin: 10px; background: #333; color: #fff; border: 1px solid #555; }
         .persistence-warning { position: fixed; top: 60px; left: 10px; right: 10px; z-index: 30; padding: 8px; border: 1px solid #f39c12; border-radius: 4px; background: rgba(58,43,18,0.95); color: #ffd27f; font: 0.75rem sans-serif; pointer-events: auto; }
         .sensor-status { position: fixed; top: 105px; left: 10px; right: 10px; z-index: 30; padding: 8px; border: 1px solid #f39c12; border-radius: 4px; background: rgba(58,43,18,0.95); color: #ffd27f; font: 0.75rem sans-serif; pointer-events: auto; }
-        .pwa-status { position: fixed; top: 72px; left: 50%; z-index: 40; transform: translateX(-50%); padding: 5px 7px; border: 1px solid #496849; border-radius: 4px; background: rgba(0,20,0,0.92); color: #b8e8b8; font: 0.64rem sans-serif; white-space: nowrap; pointer-events: auto; }
+        .pwa-status { align-self: center; margin: 4px 0 8px; padding: 5px 7px; border: 1px solid #496849; border-radius: 4px; background: rgba(0,20,0,0.92); color: #b8e8b8; font: 0.64rem sans-serif; white-space: nowrap; pointer-events: auto; }
         .pwa-update-btn { margin-left: 5px; padding: 3px 5px; border-color: #ffd27f; background: #302410; color: #ffd27f; font-size: 0.64rem; cursor: pointer; }
         .hidden { display: none; }
+        @media (max-height: 520px) {
+            .controls { max-height: 42vh; overflow-y: auto; }
+            .hud-top { padding: 6px 10px; }
+            .sensor-data { font-size: 0.78rem; }
+            .result-display { padding: 0; }
+            .dist-val { font-size: 2.4rem; }
+            .use-btn { margin-top: 4px; padding: 7px 20px; }
+        }
     </style>
 </head>
 <body>
@@ -80,18 +89,13 @@
 <div id="camContainer"><video id="video" autoplay playsinline></video></div>
 <div id="persistenceWarnings" class="persistence-warning hidden" role="status"></div>
 <div id="sensorStatus" class="sensor-status hidden" role="status"></div>
-<div class="pwa-status" role="status">
-    <span id="pwaStatusText">OFFLINE: TARKISTETAAN</span>
-    <button id="pwaUpdateButton" class="pwa-update-btn" type="button" hidden>OTA KÄYTTÖÖN</button>
-</div>
-
 <div id="uiLayer">
     <div class="hud-top">
         <div>
             <button class="back-btn" onclick="location.href='index.html'">⬅ POISTU</button>
         </div>
         <div class="sensor-data" style="text-align:right;">
-            <div>SUUNTA: <span id="hudAz" class="sensor-val">---</span> MIL</div>
+            <div>SUUNTA: <span id="hudAz" class="sensor-val">---</span> Mil (6400)</div>
             <div>KORO: <span id="hudElev" class="sensor-val">0</span>°</div>
             <div style="font-size:0.7rem; color:#aaa;" id="hudGps">GPS: ODOTTAA...</div>
             <div style="font-size:0.7rem; color:#aaa;" id="fovDisplay">FOV: --°</div>
@@ -109,6 +113,10 @@
     </div>
 
     <div class="controls">
+        <div class="pwa-status" role="status">
+            <span id="pwaStatusText">OFFLINE: TARKISTETAAN</span>
+            <button id="pwaUpdateButton" class="pwa-update-btn" type="button" hidden>OTA KÄYTTÖÖN</button>
+        </div>
         <label for="targetSelect" style="display:block; margin-bottom:4px; font-size:0.7rem; color:#bbb;">Esimerkkimaali ja sovitettava ulottuvuus</label>
         <div style="display:flex; gap:10px; margin-bottom:5px;">
             <select id="targetSelect" onchange="updateTarget()" style="flex:1;"></select>
@@ -130,6 +138,7 @@
             <button class="act-btn" id="btnSensors" onclick="startArSensors(true)">KÄYNNISTÄ SENSORIT</button>
             <button class="act-btn" id="btnFreeze" onclick="toggleFreeze()">❄️ JÄÄDYTÄ</button>
         </div>
+        <button class="act-btn" id="btnCameraDiagnostics" type="button" aria-haspopup="dialog" onclick="openCameraDiagnostics()">Tarkista kamera</button>
     </div>
 </div>
 
@@ -144,6 +153,18 @@
         <br>
         <button class="act-btn active" onclick="saveCalibration()">TALLENNA</button>
         <button class="act-btn" onclick="document.getElementById('calibModal').style.display='none'">PERUUTA</button>
+    </div>
+</div>
+
+<div id="cameraDiagnosticsModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="cameraDiagnosticsTitle">
+    <div class="modal-content">
+        <h2 id="cameraDiagnosticsTitle">Kameran tarkistus</h2>
+        <p>Alla näkyvät selaimen ilmoittamat aktiivisen videoraidan tiedot.</p>
+        <p><strong>Lupatila:</strong> <span id="cameraPermission">Ei saatavilla</span></p>
+        <p><strong>Aktiivinen tarkkuus:</strong> <span id="cameraResolution">Ei saatavilla</span></p>
+        <p><strong>Kuvataajuus:</strong> <span id="cameraFrameRate">Ei saatavilla</span></p>
+        <p>Fyysistä kennokokoa tai näkökenttää ei voi päätellä näistä selaintiedoista.</p>
+        <button class="act-btn" id="btnCloseCameraDiagnostics" type="button" onclick="closeCameraDiagnostics()">Sulje</button>
     </div>
 </div>
 
@@ -182,6 +203,7 @@
     let frameRotationDegrees = 0;
     let elevationOffsetDegrees = 0;
     let sensorElevationDegrees = null;
+    let cameraDiagnosticsTrigger = null;
 
     // --- INIT ---
     window.onload = function() {
@@ -252,8 +274,56 @@
         TJL.safeDom.setText('btnSensors', allActive ? 'SENSORIT KÄYTÖSSÄ' : 'KÄYNNISTÄ SENSORIT');
     }
 
+    function cameraPermissionLabel(permission) {
+        const labels = {
+            granted: 'Myönnetty',
+            denied: 'Evättiin',
+            unknown: 'Tuntematon',
+            unsupported: 'Ei tuettu'
+        };
+        return labels[permission] || 'Ei saatavilla';
+    }
+
+    function renderCameraDiagnostics(state) {
+        const diagnostics = state && state.diagnostics;
+        const resolution = diagnostics && diagnostics.resolution;
+        const hasResolution = resolution && Number.isFinite(resolution.width) && Number.isFinite(resolution.height);
+        TJL.safeDom.setText('cameraPermission', cameraPermissionLabel(state && state.permission));
+        TJL.safeDom.setText('cameraResolution', hasResolution ? `${resolution.width} × ${resolution.height} px` : 'Ei saatavilla');
+        TJL.safeDom.setText('cameraFrameRate', diagnostics && Number.isFinite(diagnostics.frameRate)
+            ? `${diagnostics.frameRate} fps`
+            : 'Ei saatavilla');
+    }
+
+    function openCameraDiagnostics() {
+        cameraDiagnosticsTrigger = document.activeElement;
+        cameraAdapter.refreshDiagnostics();
+        const modal = document.getElementById('cameraDiagnosticsModal');
+        modal.style.display = 'block';
+        modal.setAttribute('aria-hidden', 'false');
+        document.getElementById('btnCloseCameraDiagnostics').focus();
+    }
+
+    function closeCameraDiagnostics() {
+        const modal = document.getElementById('cameraDiagnosticsModal');
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+        if (cameraDiagnosticsTrigger && typeof cameraDiagnosticsTrigger.focus === 'function') {
+            cameraDiagnosticsTrigger.focus();
+        }
+        cameraDiagnosticsTrigger = null;
+    }
+
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && document.getElementById('cameraDiagnosticsModal').style.display === 'block') {
+            event.preventDefault();
+            closeCameraDiagnostics();
+        }
+    });
+
     cameraAdapter.subscribe(state => {
         appState.sensors.camera = state;
+        renderCameraDiagnostics(state);
         renderArSensorStatus();
     });
 

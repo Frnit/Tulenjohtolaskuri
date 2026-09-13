@@ -58,6 +58,40 @@ test('ACC-SENSOR-LIFECYCLE-001 camera start, freeze and stop own the acquired st
   assert.equal(adapter.capability().status, 'stopped');
 });
 
+test('ACC-SENSOR-DIAGNOSTICS-001 camera exposes browser-reported active video settings', async () => {
+  const TJL = await loadAdapters();
+  const track = {
+    getSettings: () => ({width: 1280, height: 720, frameRate: 30})
+  };
+  const stream = {
+    getTracks: () => [{stop() {}}],
+    getVideoTracks: () => [track]
+  };
+  const video = {srcObject: null, videoWidth: 640, videoHeight: 480};
+  const environment = lifecycleEnvironment({
+    navigator: {mediaDevices: {getUserMedia: async () => stream}}
+  });
+  const adapter = TJL.createCameraAdapter({environment, video});
+
+  assert.equal((await adapter.start()).ok, true);
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(adapter.capability().diagnostics)),
+    {resolution: {width: 1280, height: 720}, frameRate: 30}
+  );
+  track.getSettings = () => ({width: 1920, height: 1080, frameRate: 60});
+  adapter.refreshDiagnostics();
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(adapter.capability().diagnostics.resolution)),
+    {width: 1920, height: 1080}
+  );
+  assert.equal(adapter.capability().diagnostics.frameRate, 60);
+  adapter.stop();
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(adapter.capability().diagnostics.resolution)),
+    {width: null, height: null}
+  );
+});
+
 test('ACC-SENSOR-LIFECYCLE-001 camera releases an acquired stream when attachment fails', async () => {
   const TJL = await loadAdapters();
   let stopCount = 0;

@@ -16,6 +16,10 @@
             permission: supported ? 'unknown' : 'unsupported',
             status: 'idle',
             value: null,
+            diagnostics: {
+                resolution: {width: null, height: null},
+                frameRate: null
+            },
             observedAt: null,
             error: null,
             fallback: 'manual-workflow'
@@ -50,6 +54,33 @@
             });
         }
 
+        function finitePositive(value) {
+            return Number.isFinite(Number(value)) && Number(value) > 0 ? Number(value) : null;
+        }
+
+        function readDiagnostics() {
+            const track = stream && typeof stream.getVideoTracks === 'function'
+                ? stream.getVideoTracks()[0]
+                : null;
+            let settings = {};
+            if (track && typeof track.getSettings === 'function') {
+                try { settings = track.getSettings() || {}; } catch (_error) {}
+            }
+            const width = finitePositive(settings.width) || finitePositive(video && video.videoWidth);
+            const height = finitePositive(settings.height) || finitePositive(video && video.videoHeight);
+            return {
+                resolution: {width, height},
+                frameRate: finitePositive(settings.frameRate)
+            };
+        }
+
+        function refreshDiagnostics() {
+            return publish({diagnostics: stream ? readDiagnostics() : {
+                resolution: {width: null, height: null},
+                frameRate: null
+            }});
+        }
+
         async function start() {
             if (stream) return {ok: true, state: snapshot()};
             if (state.status === 'starting') return {ok: true, state: snapshot()};
@@ -72,7 +103,7 @@
                 if (video) video.srcObject = stream;
                 return {
                     ok: true,
-                    state: publish({permission: 'granted', status: 'active', observedAt: new Date().toISOString(), error: null})
+                    state: publish({permission: 'granted', status: 'active', diagnostics: readDiagnostics(), observedAt: new Date().toISOString(), error: null})
                 };
             } catch (cause) {
                 release(stream);
@@ -82,7 +113,7 @@
                 }
                 const denied = cause && (cause.name === 'NotAllowedError' || cause.name === 'SecurityError');
                 const error = createError(denied ? 'permission-denied' : 'missing-sensor', denied ? 'ERR-CAMERA-DENIED-001' : 'ERR-CAMERA-START-001', cause);
-                return {ok: false, error, state: publish({permission: denied ? 'denied' : state.permission, status: 'error', error})};
+                return {ok: false, error, state: publish({permission: denied ? 'denied' : state.permission, status: 'error', diagnostics: {resolution: {width: null, height: null}, frameRate: null}, error})};
             }
         }
 
@@ -93,7 +124,7 @@
             if (video) {
                 try { video.srcObject = null; } catch (_error) {}
             }
-            return {ok: true, state: publish({status: 'stopped', observedAt: null})};
+            return {ok: true, state: publish({status: 'stopped', diagnostics: {resolution: {width: null, height: null}, frameRate: null}, observedAt: null})};
         }
 
         async function freeze(frozen) {
@@ -122,6 +153,7 @@
             start,
             stop,
             freeze,
+            refreshDiagnostics,
             subscribe,
             dispose() {
                 stop();
