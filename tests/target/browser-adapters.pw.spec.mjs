@@ -26,6 +26,41 @@ test('@target ACC-SENSOR-FALLBACK-001 [CHG-P2-5-BROWSER-ADAPTERS-001] keeps Core
   await expect.poll(() => pageErrorDetails(errors)).toEqual([]);
 });
 
+test('@target ACC-SENSOR-DIAGNOSTICS-001 camera diagnostics show browser-reported active track metadata', async ({page}) => {
+  await page.addInitScript(() => {
+    const track = {
+      getSettings: () => ({width: 1280, height: 720, frameRate: 30}),
+      stop() {}
+    };
+    const stream = {
+      getTracks: () => [track],
+      getVideoTracks: () => [track]
+    };
+    Object.defineProperty(HTMLMediaElement.prototype, 'srcObject', {
+      configurable: true,
+      get() { return this.__testStream || null; },
+      set(value) { this.__testStream = value; }
+    });
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {getUserMedia: async () => stream}
+    });
+  });
+
+  await page.goto('/ar.html');
+  await expect.poll(() => page.evaluate(() => appState.sensors.camera.status)).toBe('active');
+  await expect(page.locator('#cameraDiagnosticsModal')).toBeHidden();
+  await page.getByRole('button', {name: 'Tarkista kamera'}).click();
+  await expect(page.locator('#cameraPermission')).toHaveText('Myönnetty');
+  await expect(page.locator('#cameraResolution')).toHaveText('1280 × 720 px');
+  await expect(page.locator('#cameraFrameRate')).toHaveText('30 fps');
+  await expect(page.locator('#cameraDiagnosticsModal')).toBeVisible();
+  await expect(page.locator('#btnCloseCameraDiagnostics')).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#cameraDiagnosticsModal')).toBeHidden();
+  await expect(page.locator('#btnCameraDiagnostics')).toBeFocused();
+});
+
 test('@target ACC-SENSOR-DENIED-001 [CHG-P2-5-BROWSER-ADAPTERS-001] reports denied permissions without an automatic request loop', async ({page}) => {
   await page.addInitScript(() => {
     window.__permissionEvidence = {camera: 0, orientation: 0, geolocation: 0};
